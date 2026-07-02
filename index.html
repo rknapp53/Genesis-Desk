@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GENESIS·DESK — ATCF File Reader</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#111721; --line:#1f2937;
+    --ink:#e6edf3; --dim:#7d8896; --dimmer:#4a5563;
+    --atl:#3fb6ff; --gold:#ffb03f;
+    --hot:#ff4757; --warm:#ff9f43; --mod:#ffd93d; --low:#5eead4; --none:#334155;
+    --grid:#0e1420;
+    --mono:'SF Mono',ui-monospace,'Cascadia Code','Roboto Mono',Menlo,Consolas,monospace;
+    --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;height:100%;overflow:hidden;}
+  body{display:flex;flex-direction:column;min-height:100vh}
+  a{color:var(--atl)}
+  .mono{font-family:var(--mono)}
+
+  header{display:flex;align-items:baseline;gap:18px;padding:14px 22px;
+    border-bottom:1px solid var(--line);background:
+    linear-gradient(180deg,#0d131c,#0a0e14);flex-wrap:wrap;z-index:3000;}
+  .brand{font-family:var(--mono);font-weight:700;letter-spacing:2px;font-size:15px}
+  .brand b{color:var(--atl)}
+  .tagline{font-family:var(--mono);font-size:10.5px;color:var(--dim);
+    letter-spacing:1px;text-transform:uppercase}
+  .clock{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim);
+    text-align:right;line-height:1.5}
+  .clock b{color:var(--ink)}
+
+  /* ---- upload screen ---- */
+  #uploadScreen{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;overflow-y:auto;z-index:100;}
+  .upload-card{max-width:640px;width:100%;}
+  .upload-card h1{font-size:26px;font-weight:800;margin-bottom:10px;letter-spacing:-.3px}
+  .upload-card .lede{color:var(--dim);font-size:14px;line-height:1.6;margin-bottom:28px}
+  
+  .dropzone{border:2px dashed var(--line);border-radius:12px;padding:44px 24px;
+    text-align:center;cursor:pointer;transition:.15s;background:var(--panel);}
+  .dropzone:hover, .dropzone.drag{border-color:var(--atl);background:#0d1826}
+  .dropzone svg{width:36px;height:36px;color:var(--dim);margin-bottom:14px}
+  .dropzone .dz-title{font-weight:700;font-size:15px;margin-bottom:6px}
+  .dropzone .dz-sub{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  #fileInput{display:none}
+  
+  .source-box{margin-top:28px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:18px 20px;}
+  .source-box h2{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+  .source-box ol{margin:0 0 0 18px;font-size:13px;line-height:1.9;color:var(--ink)}
+  .source-box code{font-family:var(--mono);font-size:11.5px;background:var(--grid);
+    padding:1px 6px;border-radius:4px;color:var(--low)}
+  .upload-error{margin-top:16px;padding:12px 16px;border-radius:8px;background:rgba(255,71,87,.1);
+    border:1px solid rgba(255,71,87,.35);color:#ff8a94;font-family:var(--mono);font-size:12px;display:none;line-height:1.5;}
+
+  /* ---- layout ---- */
+  #mainScreen{display:none;flex:1;min-height:0;}
+  .wrap{display:flex;flex:1;min-height:0;position:relative;}
+  
+  /* Leaflet Map Area */
+  .map-wrap{flex:1;position:relative;display:flex;flex-direction:column;background:#0c131e;}
+  .map-toolbar{display:flex;gap:6px;padding:12px;border-bottom:1px solid var(--grid);
+    align-items:center;flex-wrap:wrap;background:var(--bg);position:absolute;top:0;left:0;right:0;z-index:2000;}
+  .tbtn{font-family:var(--mono);font-size:10px;letter-spacing:.5px;padding:4px 9px;
+    background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    border-radius:4px;cursor:pointer;transition:.15s;white-space:nowrap;}
+  .tbtn:hover{color:var(--ink);border-color:var(--dimmer)}
+  .tbtn.on{color:#06101c;background:var(--atl);border-color:var(--atl);font-weight:600}
+  .tbtn-group{display:flex;gap:6px;align-items:center;transition:.2s;}
+  .tbtn-group.grp-disabled{opacity:.32;filter:grayscale(1);pointer-events:none;}
+  .unit-toggle .tbtn{padding:4px 8px}
+
+  #chartTooltip { position: fixed; background: rgba(10,14,20,.95); border: 1px solid var(--line);
+    padding: 10px 14px; border-radius: 6px; font-family: var(--sans); font-size: 12px;
+    color: var(--dim); pointer-events: none; opacity: 0; transition: opacity 0.1s;
+    z-index: 5000; box-shadow: 0 4px 16px rgba(0,0,0,0.6); backdrop-filter: blur(4px); line-height: 1.5; }
+
+  .axis-title-x{position:absolute;bottom:-34px;left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px;white-space:nowrap;}
+  .axis-title-y{position:absolute;top:50%;left:-66px;transform:translateY(-50%) rotate(180deg);
+    writing-mode:vertical-rl;font-family:var(--mono);font-size:9px;color:var(--dim);
+    letter-spacing:1.5px;white-space:nowrap;}
+  .axis-ytick{position:absolute;width:34px;text-align:right;left:-42px;
+    font-size:9px;color:var(--dimmer);font-family:var(--mono);}
+
+  .map-canvas{flex:1;position:relative; padding-top: 50px;}
+  #map { width: 100%; height: 100%; z-index: 1; background: #0a0e14; }
+
+  .prob-key{position:absolute;bottom:20px;right:20px;background:rgba(10,14,20,.85);
+    border:1px solid var(--line);border-radius:6px;padding:12px 16px;
+    font-family:var(--mono);font-size:10px;color:var(--dim);backdrop-filter:blur(6px);z-index:2000; pointer-events:none;}
+  .prob-key .scale{display:flex;height:10px;width:150px;border-radius:2px;overflow:hidden;margin:6px 0 4px}
+  .prob-key .ends{display:flex;justify-content:space-between;gap:4px}
+
+  /* Custom Leaflet Tooltip */
+  .leaflet-tooltip.map-tt {
+    background: rgba(10,14,20,.95); border: 1px solid var(--line); padding: 10px 14px;
+    border-radius: 6px; font-family: var(--sans); font-size: 12px; color: var(--dim);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6); backdrop-filter: blur(4px); line-height: 1.5;
+  }
+  .leaflet-tooltip-left.map-tt::before, .leaflet-tooltip-right.map-tt::before,
+  .leaflet-tooltip-top.map-tt::before, .leaflet-tooltip-bottom.map-tt::before { display: none; }
+
+  #detailCol{width:520px;background:var(--panel);border-left:1px solid var(--line);
+    display:flex;flex-direction:column;overflow-y:auto; z-index: 100;}
+  .detail-head{padding:20px 20px 16px;border-bottom:1px solid var(--grid);background:var(--bg); display:flex; justify-content:space-between; align-items:flex-start;}
+  .detail-head .dn{font-size:22px;font-weight:800}
+  .detail-head .ds{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:4px}
+  .detail-head .reload{margin-top:6px;}
+
+  .cycle-selector { padding: 12px 20px; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .cycle-selector select { width: 100%; background: #0d131c; color: var(--ink); border: 1px solid var(--dimmer); padding: 8px 12px; border-radius: 6px; font-family: var(--mono); font-size: 12px; outline: none; appearance: none; cursor:pointer;}
+  .cycle-selector select:focus { border-color: var(--atl); }
+
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);margin:0}
+  .metric{background:var(--panel);padding:14px 18px}
+  .metric .v{font-family:var(--mono);font-size:22px;font-weight:700}
+  .metric .k{font-family:var(--mono);font-size:9px;color:var(--dim);
+    letter-spacing:.5px;text-transform:uppercase;margin-top:4px}
+
+  .sect-h{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--dim);padding:20px 20px 8px; font-weight:700;}
+
+  .models{padding:4px 20px 16px; border-bottom: 1px solid var(--grid); display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;}
+  .mrow{display:flex;align-items:center;gap:12px;}
+  .mrow .mn{font-family:var(--mono);font-size:11px;width:90px;color:var(--ink)}
+  .mrow .mtrack{flex:1;height:12px;background:var(--grid);border-radius:4px;
+    position:relative;overflow:hidden}
+  .mrow .mtrack i{display:block;height:100%;border-radius:4px}
+  .mrow .mv{font-family:var(--mono);font-size:12px;width:30px;text-align:right;color:var(--dim);font-weight:600}
+
+  .chart-wrap { position: relative; background: var(--panel); margin-bottom: 12px; }
+  .fs-btn { position: absolute; right: 20px; top: 16px; background: var(--line); border: none; color: var(--ink); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 10px; font-family: var(--mono); font-weight:700; transition:0.15s;}
+  .fs-btn:hover { background: var(--atl); color: #06101c; }
+
+  .intensity-line { transition: opacity 0.2s; cursor: pointer; }
+  .intensity-line:hover { opacity: 1 !important; stroke-width: 4px !important; }
+  .line-mean { opacity: 1 !important; }
+
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:#233142;border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:#32445a}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><b>GENESIS</b>·DESK</div>
+  <div class="tagline">ATCF File Reader · Runs Entirely In Your Browser</div>
+  <div class="clock">
+    <b id="cycleLabel">—</b>
+  </div>
+</header>
+
+<div id="uploadScreen">
+  <div class="upload-card">
+    <h1>Load an ATCF a-deck</h1>
+    <p class="lede">Drop an ATCF a-deck file from your computer to analyze ensemble spread and guidance models.</p>
+
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="dz-title">Drop your a-deck here, or click to browse</div>
+      <div class="dz-sub">.dat · .dat.gz · .txt</div>
+    </div>
+    <input type="file" id="fileInput" accept=".dat,.gz,.txt">
+    <div class="upload-error" id="uploadError"></div>
+
+    <div class="source-box">
+      <h2>Where to get one</h2>
+      <ol>
+        <li>Browse <a href="https://hurricanes.ral.ucar.edu/realtime/current/" target="_blank" rel="noopener">NCAR RAL's active storm index</a> — every basin, updated in real time.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<div id="mainScreen">
+  <div class="wrap">
+    <div class="map-wrap">
+      <div class="map-toolbar">
+        <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px">DATA</span>
+        <button class="tbtn on" id="toggleEnsBtn">Ensembles</button>
+        <button class="tbtn" id="toggleTrackBtn">Track Models</button>
+        <button class="tbtn" id="toggleIntBtn">Intensity Models</button>
+        <button class="tbtn" id="toggleHeatmapBtn">MSLP Heatmap</button>
+
+        <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-left:16px">WIND UNITS</span>
+        <div class="tbtn-group unit-toggle">
+          <button class="tbtn on" data-windunit="kt">KT</button>
+          <button class="tbtn" data-windunit="mph">MPH</button>
+        </div>
+
+        <span style="margin-left:auto"></span>
+        <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px" id="colorByLabel">COLOR MAP TRACKS BY</span>
+        <div class="tbtn-group" id="colorByGroup">
+          <button class="tbtn on" data-colorby="model">Model</button>
+          <button class="tbtn" data-colorby="wind">Wind Speed</button>
+          <button class="tbtn" data-colorby="pressure">Pressure</button>
+        </div>
+      </div>
+
+      <div class="map-canvas">
+        <div id="map"></div>
+        <div class="prob-key" id="intensityKey" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div id="detailCol"></div>
+  </div>
+</div>
+<div id="chartTooltip"></div>
+
+<script>
+/* ============================================================
+   PARSER & METEOROLOGICAL CATEGORIES
+   ============================================================ */
+const TRACK_MODEL_AIDS = new Set([
+  "AVNI","AVNO","GFS","UKX","EGRI","CMC","NVGI","NVGM","TVCN","TVCA","TVCE","HCCA","OFCL","OFCI","AEMI","AEMN"
+]);
+const INTENSITY_MODEL_AIDS = new Set([
+  "DSHP","LGEM","HWFI","HMNI","HWRF","HMON","HFSA","HFSB","HAFS","CTCI","CTC2","COTC","IVCN","IVCA",
+  "CHP1","CHP2","CHP3","CHP4","CHP5","CHP6","CHPI" 
+]);
+
+const ENSEMBLE_RE = /^[A-Z]{2}\d{2}$|AEMN|EMN|AC00/i;
+const ENS_FAMILY_COLOR = { 
+  GEFS:'#3fb6ff', NAVGEM:'#ff5d6c', CEPS:'#a97bff', 
+  ECMWF:'#ffd93d', UKMET:'#5eead4', MEAN:'#ffffff', OTHER:'#94a3b8' 
+};
+
+function ensembleFamily(tech){
+  tech = tech.toUpperCase();
+  if(tech==="ENS MEAN") return "MEAN";
+  if(tech.startsWith("AP") || tech==="AC00" || tech==="AEMN") return "GEFS";
+  if(tech.startsWith("NP")) return "NAVGEM";
+  if(tech.startsWith("CP")) return "CEPS";
+  if(tech.startsWith("EE") || tech.startsWith("EP") || tech==="EMN") return "ECMWF";
+  if(tech.startsWith("UE") || tech.startsWith("UP")) return "UKMET";
+  return "OTHER";
+}
+
+function parseLatLon(raw){
+  const digits = (raw.match(/[\d.]/g)||[]).join('');
+  if(!digits) return null;
+  let v = parseFloat(digits);
+  if(!digits.includes('.')) v/=10.0;
+  if(/[SW]/i.test(raw)) v=-v;
+  return v;
+}
+
+function parseATCF(rawText){
+  const trackByCycle={}, intByCycle={}, ensByCycle={}, allCycles=new Set();
+  let basin='', cy='', stormName='';
+  
+  rawText.split(/\r?\n/).forEach(raw=>{
+    const line = raw.trim();
+    if(!line) return;
+    try{
+      const parts = line.split(',').map(s=>s.trim());
+      if(parts.length < 10) return;
+      if(!basin){ basin=parts[0].toUpperCase(); cy=parts[1]; }
+      const cycle = parts[2];
+      const tech = parts[4].toUpperCase();
+      allCycles.add(cycle);
+      let tau = parseInt(parseFloat(parts[5]),10); if(isNaN(tau)) tau=0;
+      const lat = parseLatLon(parts[6]), lon = parseLatLon(parts[7]);
+      if(lat===null||lon===null) return;
+      let wind = parseInt(parseFloat(parts[8]),10); if(isNaN(wind)) wind=0;
+      let pres = parseInt(parseFloat(parts[9]),10); if(isNaN(pres)||pres<=0) pres=1013;
+      
+      if(parts.length > 27){
+        const cand = parts[27].toUpperCase();
+        if(cand && /^[A-Z0-9\- ]{2,}$/.test(cand) && cand !== 'GENERIC'){
+          const isTemp = cand.includes('INVEST') || cand.includes('PTC') || cand.includes('TD');
+          const hasRealName = stormName && !stormName.includes('INVEST') && !stormName.includes('PTC') && !stormName.includes('TD');
+          if (!(hasRealName && isTemp)) {
+            stormName = cand;
+          }
+        }
+      }
+
+      const isTrack = TRACK_MODEL_AIDS.has(tech);
+      const isIntense = INTENSITY_MODEL_AIDS.has(tech);
+      const isEns = ENSEMBLE_RE.test(tech);
+      
+      if(!isTrack && !isIntense && !isEns) return;
+      
+      let bucket;
+      if(isEns) bucket = ensByCycle;
+      else if(isIntense) bucket = intByCycle;
+      else bucket = trackByCycle;
+
+      bucket[cycle] = bucket[cycle] || {};
+      if(!bucket[cycle][tech]){
+        bucket[cycle][tech] = {
+          model: isEns ? ensembleFamily(tech) : tech,
+          member: tech,
+          cycle,
+          pts:[]
+        };
+      }
+      bucket[cycle][tech].pts.push([lon,lat,wind,tau,pres]);
+    }catch(e){}
+  });
+
+  for(let cyc in ensByCycle){
+     let tauMap = {};
+     Object.values(ensByCycle[cyc]).forEach(tr => {
+        tr.pts.forEach(p => {
+           let tau = p[3];
+           if(!tauMap[tau]) tauMap[tau] = { w:0, p:0, pc:0, lon:0, lat:0, c:0 };
+           tauMap[tau].w += p[2];
+           if(p[4] && p[4]!==1013){ 
+             tauMap[tau].p += p[4]; 
+             tauMap[tau].pc++; 
+           }
+           tauMap[tau].lon += p[0];
+           tauMap[tau].lat += p[1];
+           tauMap[tau].c++;
+        });
+     });
+     
+     let meanPts = Object.keys(tauMap).map(Number).sort((a,b)=>a-b).map(tau => {
+        let dat = tauMap[tau];
+        let avgP = dat.pc > 0 ? Math.round(dat.p/dat.pc) : 1013;
+        return [dat.lon/dat.c, dat.lat/dat.c, Math.round(dat.w/dat.c), tau, avgP];
+     });
+     
+     if(meanPts.length > 1){
+       ensByCycle[cyc]["MEAN"] = { model:"MEAN", member:"ENS MEAN", cycle:cyc, pts:meanPts };
+     }
+  }
+
+  function cleanBucket(bucket) {
+    const cleaned = {};
+    for (const cyc in bucket) {
+      const validTracks = Object.values(bucket[cyc])
+        .map(t => { t.pts.sort((a,b)=>a[3]-b[3]); return t; })
+        .filter(t => t.pts.length >= 2); 
+      if (validTracks.length > 0) {
+        cleaned[cyc] = validTracks;
+      }
+    }
+    return cleaned;
+  }
+  
+  const trackClean = cleanBucket(trackByCycle);
+  const intClean = cleanBucket(intByCycle);
+  const ensClean = cleanBucket(ensByCycle);
+  
+  const allValidCycles = [...new Set([
+    ...Object.keys(trackClean), ...Object.keys(intClean), ...Object.keys(ensClean)
+  ])].sort().reverse();
+
+  return {
+    basin, cy, stormName: stormName || `TC ${cy}${basin}`,
+    cycles: allValidCycles,
+    trackModels: { byCycle: trackClean },
+    intensityModels: { byCycle: intClean },
+    ensembles: { byCycle: ensClean },
+  };
+}
+
+function currentFix(parsed, cyc){
+  if(!cyc) return null;
+  const tTracks = parsed.trackModels.byCycle[cyc] || [];
+  const iTracks = parsed.intensityModels.byCycle[cyc] || [];
+  const eTracks = parsed.ensembles.byCycle[cyc] || [];
+  const allTracks = [...tTracks, ...iTracks, ...eTracks];
+  
+  if(!allTracks.length) return null;
+  let pts = allTracks.map(t=>t.pts.find(p=>p[3]===0)).filter(Boolean);
+  if(!pts.length) pts = allTracks.map(t=>t.pts[0]).filter(Boolean);
+  if(!pts.length) return null;
+  
+  const lon = pts.reduce((s,p)=>s+p[0],0)/pts.length;
+  const lat = pts.reduce((s,p)=>s+p[1],0)/pts.length;
+  const wind = Math.max(...pts.map(p=>p[2]));
+  const pres = Math.min(...pts.map(p=>p[4]));
+  return {lon,lat,wind,pres,cycle:cyc};
+}
+
+function computeProbabilities(tracks){
+  const validTracks = tracks.filter(t => t.member !== "ENS MEAN");
+  const peaks = validTracks.map(t=>Math.max(...t.pts.map(p=>p[2])));
+  const total = peaks.length;
+  const frac = th => total ? peaks.filter(v=>v>=th).length/total : 0;
+  return {
+    total,
+    pTD:frac(25), pTS:frac(34), pC1:frac(64), pC2:frac(83), pC3:frac(96), pC4:frac(113), pC5:frac(137),
+  };
+}
+
+function computeMetrics(tracks){
+  const validTracks = tracks.filter(t => t.member !== "ENS MEAN");
+  if(!validTracks.length) return { meanVmax: 0, meanMinP: 0 };
+  
+  let sumW = 0, sumP = 0, countP = 0;
+  validTracks.forEach(t => {
+    sumW += Math.max(...t.pts.map(p => p[2]));
+    const minP = Math.min(...t.pts.filter(p => p[4] && p[4] !== 1013).map(p => p[4]));
+    if(minP && minP !== Infinity) { sumP += minP; countP++; }
+  });
+  
+  return {
+    meanVmax: Math.round(sumW / validTracks.length),
+    meanMinP: countP ? Math.round(sumP / countP) : 1013
+  };
+}
+
+/* ============================================================
+   UI STATE & COLOR GRADIENTS
+   ============================================================ */
+const S = {
+  parsed: null, fix: null,
+  activeCycle: null,
+  showEnsembles: true, showTrackModels: false, showIntensityModels: false, showHeatmap: false,
+  colorBy: 'model', detailTab: 'ensemble', windUnit: 'kt'
+};
+
+/* ---- wind unit helpers ---- */
+const KT_TO_MPH = 1.15078;
+function windConv(kt, unit){ return unit === 'mph' ? kt * KT_TO_MPH : kt; }
+function windDisp(kt, unit){ if(kt==null||isNaN(kt)) return '—'; return Math.round(windConv(kt, unit)); }
+function windSuffix(unit){ return unit === 'mph' ? 'mph' : 'kt'; }
+
+/* ---- cycle/time helpers ---- */
+function cycleToDate(cyc){
+  if(!cyc || cyc.length < 10) return null;
+  const y = +cyc.slice(0,4), mo = +cyc.slice(4,6)-1, d = +cyc.slice(6,8), h = +cyc.slice(8,10);
+  return new Date(Date.UTC(y, mo, d, h));
+}
+function formatAxisTime(cyc, tauHours){
+  const base = cycleToDate(cyc);
+  if(!base) return `${tauHours}h`;
+  const dt = new Date(base.getTime() + tauHours*3600*1000);
+  const mm = String(dt.getUTCMonth()+1).padStart(2,'0');
+  const dd = String(dt.getUTCDate()).padStart(2,'0');
+  const hh = String(dt.getUTCHours()).padStart(2,'0');
+  return `${mm}/${dd} ${hh}Z`;
+}
+
+/* ---- shared chart tooltip (inline charts) ---- */
+window.showTT = function(e, member, maxV, minP, unit){
+  const tt = document.getElementById('chartTooltip');
+  if(!tt) return;
+  const u = unit || S.windUnit;
+  const dispP = minP && minP !== 1013 ? minP + ' mb' : '—';
+  tt.innerHTML = '<strong style="color:var(--atl);font-family:var(--mono);font-size:14px;">' + member + '</strong><br>Max Wind: <span style="color:var(--ink);font-family:var(--mono)">' + windDisp(maxV,u) + ' ' + windSuffix(u) + '</span><br>Min Pres: <span style="color:var(--ink);font-family:var(--mono)">' + dispP + '</span>';
+  tt.style.left = (e.clientX + 15) + 'px';
+  tt.style.top = (e.clientY + 15) + 'px';
+  tt.style.opacity = 1;
+};
+window.hideTT = function(){
+  const tt = document.getElementById('chartTooltip');
+  if(tt) tt.style.opacity = 0;
+};
+
+function hexToRgb(hex) {
+  let c = hex.substring(1).split('');
+  if(c.length===3) c=[c[0],c[0],c[1],c[1],c[2],c[2]];
+  const h = parseInt(c.join(''), 16);
+  return [(h>>16)&255, (h>>8)&255, h&255];
+}
+function rgbToHex(r,g,b) {
+  return "#" + (1<<24 | r<<16 | g<<8 | b).toString(16).slice(1);
+}
+function interpColor(val, stops) {
+  if (val <= stops[0][0]) return stops[0][1];
+  if (val >= stops[stops.length-1][0]) return stops[stops.length-1][1];
+  for (let i=0; i<stops.length-1; i++) {
+    if (val >= stops[i][0] && val <= stops[i+1][0]) {
+      const range = stops[i+1][0] - stops[i][0];
+      const factor = range === 0 ? 0 : (val - stops[i][0]) / range;
+      const rgb1 = hexToRgb(stops[i][1]);
+      const rgb2 = hexToRgb(stops[i+1][1]);
+      const r = Math.round(rgb1[0] + factor*(rgb2[0]-rgb1[0]));
+      const g = Math.round(rgb1[1] + factor*(rgb2[1]-rgb1[1]));
+      const b = Math.round(rgb1[2] + factor*(rgb2[2]-rgb1[2]));
+      return rgbToHex(r,g,b);
+    }
+  }
+  return stops[0][1];
+}
+
+const WIND_STOPS = [[0,'#7d8896'], [34,'#5eead4'], [64,'#3fb6ff'], [83,'#ffd93d'], [96,'#ff9f43'], [113,'#ff4757'], [137,'#c084fc'], [160,'#f472b6']];
+const PRES_STOPS = [[880,'#f472b6'], [910,'#c084fc'], [930,'#ff4757'], [950,'#ff9f43'], [970,'#ffd93d'], [990,'#3fb6ff'], [1005,'#5eead4'], [1020,'#7d8896']];
+
+function trackSegColor(p1, p2, manualScale){
+  let scale = manualScale || S.colorBy;
+  if(scale==='wind') return interpColor(((p1[2]||0)+(p2[2]||0))/2, WIND_STOPS);
+  if(scale==='pressure') return interpColor(((p1[4]||1013)+(p2[4]||1013))/2, PRES_STOPS);
+  return null;
+}
+function pColor(p){
+  if(p>=.8) return '#ff4757'; if(p>=.6) return '#ff9f43';
+  if(p>=.4) return '#ffd93d'; if(p>=.2) return '#5eead4'; return '#334155';
+}
+function fmt(v,suf=''){ return (v==null||isNaN(v)) ? '—' : v+suf; }
+function formatCycle(cyc){
+  if(!cyc || cyc.length < 10) return cyc || '—';
+  const months=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const mo = parseInt(cyc.slice(4,6),10)-1, dd=cyc.slice(6,8), hh=cyc.slice(8,10);
+  return `${dd} ${months[mo]||''} ${hh}Z`;
+}
+
+/* ============================================================
+   LEAFLET MAP INTEGRATION
+   ============================================================ */
+let leafletMap;
+let mapLayerGroup;
+
+function initLeaflet() {
+  if (leafletMap) return;
+  leafletMap = L.map('map', {zoomControl: false, attributionControl: false}).setView([20, -60], 3);
+  
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19
+  }).addTo(leafletMap);
+  
+  mapLayerGroup = L.layerGroup().addTo(leafletMap);
+}
+
+function renderIntensityKey(){
+  const el = document.getElementById('intensityKey');
+  if(S.colorBy==='model'){ el.style.display='none'; return; }
+  el.style.display='';
+  const label = S.colorBy==='wind' ? `WIND (${windSuffix(S.windUnit).toUpperCase()})` : 'PRESSURE (MB)';
+  const ends = S.colorBy==='wind' ? ['TD','TS','C1','C2','C3','C4','C5'] : ['≥1005','','','','','','≤880'];
+  const bgGrad = 'linear-gradient(to right, #7d8896, #5eead4, #3fb6ff, #ffd93d, #ff9f43, #ff4757, #c084fc, #f472b6)';
+  el.innerHTML = `
+    <div style="margin-bottom:4px;font-weight:600">TRACK COLOR · ${label}</div>
+    <div class="scale" style="background:${bgGrad}"></div>
+    <div class="ends">${ends.map(e=>`<span>${e}</span>`).join('')}</div>`;
+}
+
+function renderMapTracks(tracks, modelClassColor) {
+  tracks.forEach(tr => {
+    const isMean = tr.member === 'ENS MEAN';
+    const color = isMean ? '#ffffff' : (modelClassColor || ENS_FAMILY_COLOR[ensembleFamily(tr.member || tr.model)] || '#94a3b8');
+    const maxV = Math.max(...tr.pts.map(p=>p[2]));
+    const minP = Math.min(...tr.pts.filter(p=>p[4]&&p[4]!==1013).map(p=>p[4])) || 1013;
+    const memName = tr.member || tr.model;
+    
+    const dispP = minP !== 1013 ? minP + ' mb' : '—';
+    const ttHtml = `<strong style="color:var(--atl);font-family:var(--mono);font-size:14px;">${memName}</strong><br>
+                    Max Wind: <span style="color:var(--ink);font-family:var(--mono)">${windDisp(maxV, S.windUnit)} ${windSuffix(S.windUnit)}</span><br>
+                    Min Pres: <span style="color:var(--ink);font-family:var(--mono)">${dispP}</span>`;
+
+    const baseWidth = isMean ? 3 : 1.5;
+    const opacity = isMean ? 1 : 0.65;
+
+    // Draw lines
+    if(S.colorBy === 'model') {
+      const latlngs = tr.pts.map(p => [p[1], p[0]]); // Leaflet uses [Lat, Lon]
+      const line = L.polyline(latlngs, {color: color, weight: baseWidth, opacity: opacity});
+      line.bindTooltip(ttHtml, {sticky: true, className: 'map-tt'});
+      line.addTo(mapLayerGroup);
+    } else {
+      const trackGroup = L.featureGroup();
+      for(let i=1; i<tr.pts.length; i++){
+        const p1 = tr.pts[i-1], p2 = tr.pts[i];
+        const segCol = isMean ? '#fff' : trackSegColor(p1, p2);
+        L.polyline([[p1[1], p1[0]], [p2[1], p2[0]]], {color: segCol, weight: baseWidth+0.5, opacity: opacity}).addTo(trackGroup);
+      }
+      trackGroup.bindTooltip(ttHtml, {sticky: true, className: 'map-tt'});
+      trackGroup.addTo(mapLayerGroup);
+    }
+
+    // Draw Endpoints
+    if(isMean || modelClassColor) {
+      const last = tr.pts[tr.pts.length-1];
+      const dotColor = S.colorBy==='model' ? color : trackSegColor(last, last);
+      const dotSize = isMean ? 4 : 2;
+      
+      const dot = L.circleMarker([last[1], last[0]], {radius: dotSize, color: null, fillColor: dotColor, fillOpacity: 1});
+      dot.bindTooltip(ttHtml, {sticky: true, className: 'map-tt'});
+      dot.addTo(mapLayerGroup);
+    }
+  });
+}
+
+function updateColorByAvailability(){
+  const grp = document.getElementById('colorByGroup');
+  const lbl = document.getElementById('colorByLabel');
+  if(!grp) return;
+  grp.classList.toggle('grp-disabled', S.showHeatmap);
+  if(lbl) lbl.style.opacity = S.showHeatmap ? .32 : 1;
+}
+
+function renderMap() {
+  if (!leafletMap) initLeaflet();
+  mapLayerGroup.clearLayers();
+  renderIntensityKey();
+  updateColorByAvailability();
+  
+  if(!S.parsed || !S.activeCycle) return;
+
+  const cyc = S.activeCycle;
+  const ensTracks = S.parsed.ensembles.byCycle[cyc] || [];
+  const trackTracks = S.parsed.trackModels.byCycle[cyc] || [];
+  const intTracks = S.parsed.intensityModels.byCycle[cyc] || [];
+
+  if(S.showHeatmap && ensTracks.length > 0) {
+    ensTracks.forEach(tr => {
+      if (tr.member === 'ENS MEAN') return;
+      tr.pts.forEach(p => {
+        if(p[4] && p[4] < 1013) {
+          const intensity = Math.min(1, Math.max(0, (1013 - p[4]) / 100)); 
+          const r = 4 + (intensity * 12); 
+          const color = interpColor(p[4], PRES_STOPS);
+          L.circleMarker([p[1], p[0]], {radius: r, color: null, fillColor: color, fillOpacity: 0.15}).addTo(mapLayerGroup);
+        }
+      });
+    });
+  }
+
+  if(S.showEnsembles) renderMapTracks(ensTracks, null);
+  if(S.showTrackModels) renderMapTracks(trackTracks, '#3fb6ff');
+  if(S.showIntensityModels) renderMapTracks(intTracks, '#ff9f43');
+
+  // Note: Storm Center Fix marker removed per request
+}
+
+function backToStormView(){
+  if(S.fix){
+    setTimeout(() => {
+      leafletMap.invalidateSize();
+      leafletMap.setView([S.fix.lat, S.fix.lon], 5);
+    }, 10);
+  } else { 
+    leafletMap.setView([20, -60], 3);
+  }
+}
+
+/* ============================================================
+   DETAIL PANEL & STRICT INTENSITY CHARTS
+   ============================================================ */
+
+window.openChartInNewTab = function(btn) {
+  const wrap = btn.closest('.chart-wrap');
+  const raw = wrap.getAttribute('data-chart-payload');
+  const data = JSON.parse(raw);
+
+  const newWin = window.open('', '_blank');
+  newWin.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${data.title}</title>
+      <style>
+        :root {
+          --bg:#0a0e14; --panel:#111721; --line:#1f2937;
+          --ink:#e6edf3; --dim:#7d8896; --dimmer:#4a5563;
+          --atl:#3fb6ff; --gold:#ffb03f;
+          --hot:#ff4757; --warm:#ff9f43; --mod:#ffd93d; --low:#5eead4; --none:#334155;
+          --mono:'SF Mono',ui-monospace,'Cascadia Code','Roboto Mono',Menlo,Consolas,monospace;
+          --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+        }
+        *{box-sizing:border-box;}
+        body {
+          background: var(--bg); color: var(--ink); font-family: var(--sans);
+          margin: 0; padding: 30px 50px; display: flex; flex-direction: column; min-height: 100vh;
+        }
+        .top-row{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom: 8px;}
+        .sect-h { font-family: var(--mono); font-size: 18px; letter-spacing: 1.5px; color: var(--dim); font-weight: 700; }
+        .unit-toggle{display:flex; gap:6px;}
+        .tbtn{font-family:var(--mono);font-size:10px;letter-spacing:.5px;padding:5px 11px;
+          background:var(--panel);border:1px solid var(--line);color:var(--dim);
+          border-radius:4px;cursor:pointer;transition:.15s;}
+        .tbtn:hover{color:var(--ink);border-color:var(--dimmer)}
+        .tbtn.on{color:#06101c;background:var(--atl);border-color:var(--atl);font-weight:600}
+        .tbtn[disabled]{opacity:.3; pointer-events:none;}
+        .chart-container { flex: 1; position: relative; margin: 50px 60px 60px 108px; min-height: 320px; }
+        .axis-title-x{position:absolute;bottom:-38px;left:50%;transform:translateX(-50%);
+          font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:1.5px;white-space:nowrap;}
+        .axis-title-y{position:absolute;top:50%;left:-76px;transform:translateY(-50%) rotate(180deg);
+          writing-mode:vertical-rl;font-family:var(--mono);font-size:11px;color:var(--dim);
+          letter-spacing:1.5px;white-space:nowrap;}
+        .axis-ytick{position:absolute;width:38px;text-align:right;left:-48px;
+          font-size:10px;color:var(--dimmer);font-family:var(--mono);}
+        .intensity-line { transition: opacity 0.2s; cursor: pointer; }
+        .intensity-line:hover { opacity: 1 !important; stroke-width: 4px !important; }
+        .line-mean { opacity: 1 !important; }
+
+        #chartTooltip { position: fixed; background: rgba(10,14,20,.95); border: 1px solid var(--line);
+          padding: 10px 14px; border-radius: 6px; font-family: var(--sans); font-size: 12px;
+          color: var(--dim); pointer-events: none; opacity: 0; transition: opacity 0.1s;
+          z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,0.6); backdrop-filter: blur(4px); line-height: 1.5; }
+      </style>
+    </head>
+    <body>
+      <div class="top-row">
+        <div class="sect-h">${data.title}</div>
+        <div class="unit-toggle" id="unitToggle" style="${data.mode==='pressure' ? 'display:none' : ''}">
+          <button class="tbtn" data-u="kt">KT</button>
+          <button class="tbtn" data-u="mph">MPH</button>
+        </div>
+      </div>
+      <div id="gradientBar"></div>
+      <div class="chart-container" id="chartContainer"></div>
+      <div id="chartTooltip"></div>
+
+      <script>
+        const CHART = ${JSON.stringify(data)};
+        let unit = CHART.unit || 'kt';
+        const Q = String.fromCharCode(39);
+
+        function hexToRgb(hex){ let c=hex.substring(1).split(''); if(c.length===3) c=[c[0],c[0],c[1],c[1],c[2],c[2]]; const h=parseInt(c.join(''),16); return [(h>>16)&255,(h>>8)&255,h&255]; }
+        function rgbToHex(r,g,b){ return "#" + (1<<24 | r<<16 | g<<8 | b).toString(16).slice(1); }
+        function interpColor(val, stops){
+          if (val <= stops[0][0]) return stops[0][1];
+          if (val >= stops[stops.length-1][0]) return stops[stops.length-1][1];
+          for (let i=0;i<stops.length-1;i++){
+            if (val >= stops[i][0] && val <= stops[i+1][0]){
+              const range = stops[i+1][0]-stops[i][0];
+              const factor = range===0 ? 0 : (val-stops[i][0])/range;
+              const rgb1=hexToRgb(stops[i][1]), rgb2=hexToRgb(stops[i+1][1]);
+              return rgbToHex(Math.round(rgb1[0]+factor*(rgb2[0]-rgb1[0])), Math.round(rgb1[1]+factor*(rgb2[1]-rgb1[1])), Math.round(rgb1[2]+factor*(rgb2[2]-rgb1[2])));
+            }
+          }
+          return stops[0][1];
+        }
+        const WIND_STOPS = [[0,'#7d8896'], [34,'#5eead4'], [64,'#3fb6ff'], [83,'#ffd93d'], [96,'#ff9f43'], [113,'#ff4757'], [137,'#c084fc'], [160,'#f472b6']];
+        const PRES_STOPS = [[880,'#f472b6'], [910,'#c084fc'], [930,'#ff4757'], [950,'#ff9f43'], [970,'#ffd93d'], [990,'#3fb6ff'], [1005,'#5eead4'], [1020,'#7d8896']];
+        function trackSegColor(p1,p2,scale){
+          if(scale==='wind') return interpColor(((p1[2]||0)+(p2[2]||0))/2, WIND_STOPS);
+          return interpColor(((p1[4]||1013)+(p2[4]||1013))/2, PRES_STOPS);
+        }
+        const KT_TO_MPH = 1.15078;
+        function windDisp(kt){ if(kt==null||isNaN(kt)) return '—'; return Math.round(unit==='mph' ? kt*KT_TO_MPH : kt); }
+        function windSuffix(){ return unit==='mph' ? 'mph' : 'kt'; }
+        function cycleToDate(cyc){
+          if(!cyc || cyc.length<10) return null;
+          const y=+cyc.slice(0,4), mo=+cyc.slice(4,6)-1, d=+cyc.slice(6,8), h=+cyc.slice(8,10);
+          return new Date(Date.UTC(y,mo,d,h));
+        }
+        function formatAxisTime(cyc, tauHours){
+          const base = cycleToDate(cyc);
+          if(!base) return tauHours + 'h';
+          const dt = new Date(base.getTime() + tauHours*3600*1000);
+          const mm=String(dt.getUTCMonth()+1).padStart(2,'0'), dd=String(dt.getUTCDate()).padStart(2,'0'), hh=String(dt.getUTCHours()).padStart(2,'0');
+          return mm + '/' + dd + ' ' + hh + 'Z';
+        }
+
+        window.showTT = function(e, member, maxV, minP){
+          const tt = document.getElementById('chartTooltip');
+          const dispP = minP && minP !== 1013 ? minP + ' mb' : '—';
+          tt.innerHTML = '<strong style="color:var(--atl);font-family:var(--mono);font-size:14px;">' + member + '</strong><br>Max Wind: <span style="color:var(--ink);font-family:var(--mono)">' + windDisp(maxV) + ' ' + windSuffix() + '</span><br>Min Pres: <span style="color:var(--ink);font-family:var(--mono)">' + dispP + '</span>';
+          tt.style.left = (e.clientX + 15) + 'px';
+          tt.style.top = (e.clientY + 15) + 'px';
+          tt.style.opacity = 1;
+        };
+        window.hideTT = function(){ document.getElementById('chartTooltip').style.opacity = 0; };
+
+        function render(){
+          const isPressure = CHART.mode === 'pressure';
+          const tracksList = CHART.tracks;
+          let maxTau=120, maxV=80, minP=1020, maxP=900;
+          tracksList.forEach(tr=>tr.pts.forEach(p=>{
+            if(p[3]>maxTau) maxTau=p[3];
+            if(p[2]>maxV) maxV=p[2];
+            if(p[4] && p[4]<minP) minP=p[4];
+            if(p[4] && p[4]>maxP && p[4]!==1013) maxP=p[4];
+          }));
+          maxTau = Math.ceil(maxTau/24)*24 || 24;
+
+          let xGrid='', xLabels='';
+          for(let t=0;t<=maxTau;t+=24){
+            const xPct=(t/maxTau)*100;
+            if(t>0 && t<maxTau) xGrid += '<line x1="'+xPct+'" y1="0" x2="'+xPct+'" y2="100" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.5"/>';
+            xLabels += '<div style="position:absolute; bottom:-22px; left:'+xPct+'%; transform:translateX(-50%); font-size:10px; color:var(--dimmer); font-family:var(--mono); white-space:nowrap;">'+formatAxisTime(CHART.cyc, t)+'</div>';
+          }
+
+          let svgContent='', yGuides='';
+          const sortedList = [...tracksList].sort((a,b)=> (a.member==='ENS MEAN' ? 1 : -1));
+
+          if(isPressure){
+            minP = Math.floor(minP/10)*10 - 10; if(minP>1000) minP=1000;
+            maxP = Math.ceil(maxP/10)*10 + 10; if(maxP<1020) maxP=1020;
+            const pRange = maxP-minP;
+            const getY = p => 100 - ((maxP-p)/pRange*100);
+            const p1000Y = getY(1000), p950Y = getY(950);
+            yGuides = '<line x1="0" y1="'+p1000Y+'" x2="100" y2="'+p1000Y+'" stroke="#5eead4" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>'
+              + '<line x1="0" y1="'+p950Y+'" x2="100" y2="'+p950Y+'" stroke="#ff9f43" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>'
+              + '<div class="axis-ytick" style="top:-6px;">'+minP+'</div>'
+              + '<div class="axis-ytick" style="top:calc('+p950Y+'% - 6px); color:#ff9f43;">950</div>'
+              + '<div class="axis-ytick" style="top:calc('+p1000Y+'% - 6px); color:#5eead4;">1000</div>'
+              + '<div class="axis-ytick" style="bottom:-6px;">'+maxP+'</div>'
+              + '<div class="axis-title-y">PRESSURE (MB)</div>';
+
+            svgContent = sortedList.map(tr=>{
+              const isMean = tr.member==='ENS MEAN';
+              const pts=[...tr.pts].sort((a,b)=>a[3]-b[3]);
+              const label = tr.member || '';
+              const opacity = isMean?1:0.45, width = isMean?3:1.5;
+              let segs='';
+              for(let i=1;i<pts.length;i++){
+                const p1=pts[i-1], p2=pts[i];
+                const x1=(p1[3]/maxTau)*100, y1=getY(p1[4]||1013);
+                const x2=(p2[3]/maxTau)*100, y2=getY(p2[4]||1013);
+                const col = isMean ? '#fff' : trackSegColor(p1,p2,'pressure');
+                const mv = Math.max(...tr.pts.map(p=>p[2]));
+                const mp = Math.min(...tr.pts.map(p=>p[4]||1013));
+                segs += '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+width+'" opacity="'+opacity+'" vector-effect="non-scaling-stroke" stroke-linecap="round" class="intensity-line'+(isMean?' line-mean':'')+'" onmousemove="showTT(event, '+Q+label+Q+', '+mv+', '+mp+')" onmouseout="hideTT()"><title>'+label+'</title></line>';
+              }
+              return segs;
+            }).join('');
+          } else {
+            maxV = Math.ceil(maxV/10)*10+10;
+            const cat1Y = 100-(64/maxV)*100, tsY = 100-(34/maxV)*100;
+            yGuides = '<line x1="0" y1="'+cat1Y+'" x2="100" y2="'+cat1Y+'" stroke="#ffd93d" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>'
+              + '<line x1="0" y1="'+tsY+'" x2="100" y2="'+tsY+'" stroke="#5eead4" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>'
+              + '<div class="axis-ytick" style="top:-6px;">'+windDisp(maxV)+'</div>'
+              + '<div class="axis-ytick" style="top:calc('+cat1Y+'% - 6px); color:#ffd93d;">'+windDisp(64)+'</div>'
+              + '<div class="axis-ytick" style="top:calc('+tsY+'% - 6px); color:#5eead4;">'+windDisp(34)+'</div>'
+              + '<div class="axis-ytick" style="bottom:-6px;">0</div>'
+              + '<div class="axis-title-y">WIND SPEED ('+windSuffix().toUpperCase()+')</div>';
+
+            svgContent = sortedList.map(tr=>{
+              const isMean = tr.member==='ENS MEAN';
+              const pts=[...tr.pts].sort((a,b)=>a[3]-b[3]);
+              const label = tr.member || '';
+              const opacity = isMean?1:0.45, width = isMean?3:1.5;
+              let segs='';
+              for(let i=1;i<pts.length;i++){
+                const p1=pts[i-1], p2=pts[i];
+                const x1=(p1[3]/maxTau)*100, y1=100-(p1[2]/maxV)*100;
+                const x2=(p2[3]/maxTau)*100, y2=100-(p2[2]/maxV)*100;
+                const col = isMean ? '#fff' : trackSegColor(p1,p2,'wind');
+                const mv = Math.max(...tr.pts.map(p=>p[2]));
+                const mp = Math.min(...tr.pts.map(p=>p[4]||1013));
+                segs += '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+width+'" opacity="'+opacity+'" vector-effect="non-scaling-stroke" stroke-linecap="round" class="intensity-line'+(isMean?' line-mean':'')+'" onmousemove="showTT(event, '+Q+label+Q+', '+mv+', '+mp+')" onmouseout="hideTT()"><title>'+label+'</title></line>';
+              }
+              return segs;
+            }).join('');
+          }
+
+          const legendLabels = isPressure ? ['HIGH PRES','LOW PRES'] : ['LOW WIND','HIGH WIND'];
+          document.getElementById('gradientBar').innerHTML =
+            '<div style="display:flex; align-items:center; gap:8px; margin: 4px 0 30px 8px; font-family:var(--mono); font-size:10px; color:var(--dimmer);">'
+            + '<span>'+legendLabels[0]+'</span>'
+            + '<div style="height:6px; width:140px; border-radius:3px; background:linear-gradient(to right, #7d8896, #5eead4, #3fb6ff, #ffd93d, #ff9f43, #ff4757, #c084fc, #f472b6);"></div>'
+            + '<span>'+legendLabels[1]+'</span></div>';
+
+          document.getElementById('chartContainer').innerHTML =
+            '<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; top:0; left:0; overflow:visible;">'
+            + xGrid
+            + '<line x1="0" y1="100" x2="100" y2="100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+            + '<line x1="0" y1="0" x2="0" y2="100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+            + svgContent + '</svg>'
+            + yGuides + xLabels
+            + '<div class="axis-title-x">TIME (UTC)</div>';
+
+          document.querySelectorAll('#unitToggle [data-u]').forEach(b=>b.classList.toggle('on', b.dataset.u===unit));
+        }
+
+        document.querySelectorAll('#unitToggle [data-u]').forEach(b=>{
+          b.onclick = ()=>{ unit = b.dataset.u; render(); };
+        });
+
+        render();
+      <\/script>
+    </body>
+    </html>
+  `);
+  newWin.document.close();
+};
+
+function buildChart(tracksList, mode, title, noDataMsg, cyc){
+  if(!tracksList || tracksList.length===0){
+    return `<div class="chart-wrap">
+      <div class="sect-h">${title}</div>
+      <div style="padding:10px 20px 24px; color:var(--dimmer); font-size:10px; font-family:var(--mono); text-align:center;">${noDataMsg}</div>
+    </div>`;
+  }
+
+  const unit = S.windUnit;
+  let isPressure = mode === 'pressure';
+  let maxTau=120, maxV=80, minP=1020, maxP=900;
+
+  tracksList.forEach(tr=>tr.pts.forEach(p=>{ 
+    if(p[3]>maxTau) maxTau=p[3]; 
+    if(p[2]>maxV) maxV=p[2]; 
+    if(p[4] && p[4]<minP) minP=p[4];
+    if(p[4] && p[4]>maxP && p[4]!==1013) maxP=p[4]; 
+  }));
+  maxTau = Math.ceil(maxTau/24)*24 || 24;
+
+  let xGrid='', xLabels='';
+  for(let t=0;t<=maxTau;t+=24){
+    const xPct=(t/maxTau)*100;
+    if(t>0 && t<maxTau) xGrid += `<line x1="${xPct}" y1="0" x2="${xPct}" y2="100" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.5"/>`;
+    xLabels += `<div style="position:absolute; bottom:-20px; left:${xPct}%; transform:translateX(-50%); font-size:9px; color:var(--dimmer); font-family:var(--mono); white-space:nowrap;">${formatAxisTime(cyc, t)}</div>`;
+  }
+
+  let svgContent = '';
+  let yGuides = '';
+
+  const sortedList = [...tracksList].sort((a,b) => (a.member === 'ENS MEAN' ? 1 : -1));
+
+  if (isPressure) {
+    minP = Math.floor(minP/10)*10 - 10;
+    if (minP > 1000) minP = 1000;
+    maxP = Math.ceil(maxP/10)*10 + 10;
+    if (maxP < 1020) maxP = 1020;
+    const pRange = maxP - minP;
+
+    const getY = (p) => 100 - ((maxP - p) / pRange * 100);
+    const p1000Y = getY(1000);
+    const p950Y = getY(950);
+
+    yGuides = `
+      <line x1="0" y1="${p1000Y}" x2="100" y2="${p1000Y}" stroke="#5eead4" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>
+      <line x1="0" y1="${p950Y}" x2="100" y2="${p950Y}" stroke="#ff9f43" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>
+      <div class="axis-ytick" style="top:-6px;">${minP}</div>
+      <div class="axis-ytick" style="top:calc(${p950Y}% - 6px); color:#ff9f43;">950</div>
+      <div class="axis-ytick" style="top:calc(${p1000Y}% - 6px); color:#5eead4;">1000</div>
+      <div class="axis-ytick" style="bottom:-6px;">${maxP}</div>
+      <div class="axis-title-y">PRESSURE (MB)</div>
+    `;
+
+    svgContent = sortedList.map(tr=>{
+      const isMean = tr.member === 'ENS MEAN';
+      const sortedPts=[...tr.pts].sort((a,b)=>a[3]-b[3]);
+      const label = tr.member || tr.model || '';
+      const opacity = isMean ? 1 : 0.45;
+      const width = isMean ? 3 : 1.5;
+      const lineClass = isMean ? 'intensity-line line-mean' : 'intensity-line';
+      
+      let segs='';
+      for(let i=1;i<sortedPts.length;i++){
+        const p1=sortedPts[i-1], p2=sortedPts[i];
+        const x1=(p1[3]/maxTau)*100, y1=getY(p1[4]||1013);
+        const x2=(p2[3]/maxTau)*100, y2=getY(p2[4]||1013);
+        const col = isMean ? '#fff' : trackSegColor(p1,p2, 'pressure');
+        segs += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${width}" opacity="${opacity}" vector-effect="non-scaling-stroke" stroke-linecap="round" onmousemove="showTT(event, '${label}', ${Math.max(...tr.pts.map(p=>p[2]))}, ${Math.min(...tr.pts.map(p=>p[4]||1013))}, '${unit}')" onmouseout="hideTT()"><title>${label}</title></line>`;
+      }
+      return segs;
+    }).join('');
+  } else {
+    maxV = Math.ceil(maxV/10)*10+10;
+    const cat1Y = 100-(64/maxV)*100, tsY = 100-(34/maxV)*100;
+
+    yGuides = `
+      <line x1="0" y1="${cat1Y}" x2="100" y2="${cat1Y}" stroke="#ffd93d" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>
+      <line x1="0" y1="${tsY}" x2="100" y2="${tsY}" stroke="#5eead4" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>
+      <div class="axis-ytick" style="top:-6px;">${windDisp(maxV,unit)}</div>
+      <div class="axis-ytick" style="top:calc(${cat1Y}% - 6px); color:#ffd93d;">${windDisp(64,unit)}</div>
+      <div class="axis-ytick" style="top:calc(${tsY}% - 6px); color:#5eead4;">${windDisp(34,unit)}</div>
+      <div class="axis-ytick" style="bottom:-6px;">0</div>
+      <div class="axis-title-y">WIND SPEED (${windSuffix(unit).toUpperCase()})</div>
+    `;
+
+    svgContent = sortedList.map(tr=>{
+      const isMean = tr.member === 'ENS MEAN';
+      const sortedPts=[...tr.pts].sort((a,b)=>a[3]-b[3]);
+      const label = tr.member || tr.model || '';
+      const opacity = isMean ? 1 : 0.45;
+      const width = isMean ? 3 : 1.5;
+      const lineClass = isMean ? 'intensity-line line-mean' : 'intensity-line';
+      
+      let segs='';
+      for(let i=1;i<sortedPts.length;i++){
+        const p1=sortedPts[i-1], p2=sortedPts[i];
+        const x1=(p1[3]/maxTau)*100, y1=100-(p1[2]/maxV)*100;
+        const x2=(p2[3]/maxTau)*100, y2=100-(p2[2]/maxV)*100;
+        const col = isMean ? '#fff' : trackSegColor(p1,p2, 'wind');
+        segs += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${width}" opacity="${opacity}" vector-effect="non-scaling-stroke" stroke-linecap="round" onmousemove="showTT(event, '${label}', ${Math.max(...tr.pts.map(p=>p[2]))}, ${Math.min(...tr.pts.map(p=>p[4]||1013))}, '${unit}')" onmouseout="hideTT()"><title>${label}</title></line>`;
+      }
+      return segs;
+    }).join('');
+  }
+
+  const legendLabels = isPressure ? ['HIGH PRES', 'LOW PRES'] : ['LOW WIND', 'HIGH WIND'];
+  const gradientBar = `
+    <div style="display:flex; align-items:center; gap:8px; margin: -4px 20px 10px 32px; font-family:var(--mono); font-size:9px; color:var(--dimmer);">
+      <span>${legendLabels[0]}</span>
+      <div style="height:6px; width:120px; border-radius:3px; background:linear-gradient(to right, #7d8896, #5eead4, #3fb6ff, #ffd93d, #ff9f43, #ff4757, #c084fc, #f472b6);"></div>
+      <span>${legendLabels[1]}</span>
+    </div>
+  `;
+
+  // Raw data payload so the "new tab" view can rebuild this chart standalone,
+  // with real time-based axes and its own live KT/MPH toggle.
+  const payload = {
+    title, mode, cyc, unit,
+    tracks: tracksList.map(tr => ({ member: tr.member || tr.model || '', pts: tr.pts }))
+  };
+  const payloadJson = JSON.stringify(payload).replace(/</g, '\\u003c').replace(/'/g, '&#39;');
+
+  return `
+    <div class="chart-wrap" data-chart-payload='${payloadJson}'>
+      <div class="sect-h" style="padding-right: 80px;">${title}</div>
+      <button class="fs-btn" onclick="openChartInNewTab(this)">NEW TAB ⧉</button>
+      ${gradientBar}
+      <div class="chart-inner" style="position:relative; height:130px; margin:10px 20px 40px 84px;">
+        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; top:0; left:0; overflow:visible;">
+          ${xGrid}
+          <line x1="0" y1="100" x2="100" y2="100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+          <line x1="0" y1="0" x2="0" y2="100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+          ${svgContent}
+        </svg>
+        ${yGuides}
+        ${xLabels}
+        <div class="axis-title-x">TIME (UTC)</div>
+      </div>
+    </div>`;
+}
+
+function probRow(label, p, color){
+  return `<div class="mrow">
+    <span class="mn">${label}</span>
+    <div class="mtrack"><i style="width:${p*100}%;background:${color}"></i></div>
+    <span class="mv">${Math.round(p*100)}%</span>
+  </div>`;
+}
+
+function setCycle(cyc) {
+  S.activeCycle = cyc;
+  S.fix = currentFix(S.parsed, cyc);
+  renderMap();
+  renderDetail();
+}
+
+function setDetailTab(tab) {
+  S.detailTab = tab;
+  renderDetail();
+}
+
+function renderDetail(){
+  const el = document.getElementById('detailCol');
+  if(!S.parsed || !S.activeCycle){ el.innerHTML=''; return; }
+  const p = S.parsed, fix = S.fix;
+  const cyc = S.activeCycle;
+
+  const isEns = S.detailTab === 'ensemble';
+  const activeTracks = isEns ? (p.ensembles.byCycle[cyc] || []) : (p.intensityModels.byCycle[cyc] || []);
+  
+  const metrics = computeMetrics(activeTracks);
+  const probs = computeProbabilities(activeTracks);
+  
+  const srcLabel = isEns ? 'ENSEMBLE' : 'INTENSITY';
+  const chartTitlePrefix = isEns ? 'ENSEMBLE MEMBERS' : 'INTENSITY GUIDANCE';
+
+  const windChart = buildChart(activeTracks, 'wind', `${chartTitlePrefix} · INTENSITY / WIND`, `NO ${srcLabel} DATA AVAILABLE FOR THIS CYCLE`, cyc);
+  const presChart = buildChart(activeTracks, 'pressure', `${chartTitlePrefix} · MINIMUM SEA LEVEL PRESSURE`, `NO ${srcLabel} DATA AVAILABLE FOR THIS CYCLE`, cyc);
+
+  el.innerHTML = `
+    <div class="detail-head">
+      <div>
+        <div class="dn">${p.stormName}</div>
+        <div class="ds">${p.basin}${p.cy} · ${fix?fix.lat.toFixed(1):'—'}°${fix&&fix.lat<0?'S':'N'} ${fix?Math.abs(fix.lon).toFixed(1):'—'}°${fix&&fix.lon<0?'W':'E'}</div>
+      </div>
+      <button class="tbtn reload" onclick="resetToUpload()">↺ New File</button>
+    </div>
+
+    <div class="cycle-selector">
+      <span class="mono" style="font-size:9px;color:var(--dim);letter-spacing:1px;display:block;margin-bottom:6px;">VIEWING DATA FOR CYCLE:</span>
+      <select id="cycleSelect" onchange="setCycle(this.value)">
+        ${p.cycles.map(c => `<option value="${c}" ${c === S.activeCycle ? 'selected' : ''}>${formatCycle(c)} (${c})</option>`).join('')}
+      </select>
+    </div>
+
+    <div style="display:flex; gap:6px; padding:16px 20px 0;">
+      <button class="tbtn ${isEns?'on':''}" onclick="setDetailTab('ensemble')">Ensembles</button>
+      <button class="tbtn ${!isEns?'on':''}" onclick="setDetailTab('intensity')">Intensity Models</button>
+    </div>
+
+    <div class="metrics" style="margin-top: 16px;">
+      <div class="metric"><div class="v">${fix&&fix.wind!=null ? windDisp(fix.wind, S.windUnit) : '—'}<span style="font-size:11px;color:var(--dim)"> ${windSuffix(S.windUnit)}</span></div><div class="k">CURRENT WIND (EST.)</div></div>
+      <div class="metric"><div class="v">${fmt(fix&&fix.pres)}<span style="font-size:11px;color:var(--dim)"> mb</span></div><div class="k">CURRENT PRESSURE (EST.)</div></div>
+      <div class="metric"><div class="v">${metrics.meanVmax ? windDisp(metrics.meanVmax, S.windUnit) : '—'}<span style="font-size:11px;color:var(--dim)"> ${windSuffix(S.windUnit)}</span></div><div class="k">${srcLabel} MEAN PEAK WIND</div></div>
+      <div class="metric"><div class="v">${metrics.meanMinP && metrics.meanMinP !== 1013 ? metrics.meanMinP : '—'}<span style="font-size:11px;color:var(--dim)"> mb</span></div><div class="k">${srcLabel} MEAN MIN PRESSURE</div></div>
+    </div>
+
+    <div class="sect-h">PROBABILITY DISTRIBUTION (${probs.total} ${isEns ? 'MEMBERS' : 'MODELS'})</div>
+    <div class="models">
+      ${probRow(`TD (≥${windDisp(25,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pTD, '#5eead4')}
+      ${probRow(`TS (≥${windDisp(34,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pTS, '#3fb6ff')}
+      ${probRow(`CAT 1 (≥${windDisp(64,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC1, '#ffd93d')}
+      ${probRow(`CAT 2 (≥${windDisp(83,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC2, '#ff9f43')}
+      ${probRow(`CAT 3 (≥${windDisp(96,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC3, '#ff4757')}
+      ${probRow(`CAT 4 (≥${windDisp(113,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC4, '#c084fc')}
+      ${probRow(`CAT 5 (≥${windDisp(137,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC5, '#f472b6')}
+    </div>
+
+    <div style="margin-top:0px;">
+      ${windChart}
+      ${presChart}
+    </div>
+  `;
+}
+
+/* ============================================================
+   FILE & UPLOAD HANDLING
+   ============================================================ */
+function showUploadError(msg){
+  const el = document.getElementById('uploadError');
+  el.textContent = msg; el.style.display='block';
+}
+function clearUploadError(){
+  document.getElementById('uploadError').style.display='none';
+}
+
+function processLoadedText(text) {
+  const parsed = parseATCF(text);
+  if(!parsed.cycles.length){
+    showUploadError('No recognizable hurricane-model or ensemble rows found in this file. Is it a valid ATCF a-deck?');
+    return;
+  }
+  S.parsed = parsed;
+  S.activeCycle = parsed.cycles[0];
+  S.fix = currentFix(parsed, S.activeCycle);
+  S.detailTab = 'ensemble'; 
+  
+  S.colorBy='model'; S.windUnit='kt';
+  S.showEnsembles = true; S.showTrackModels = false; S.showIntensityModels = false; S.showHeatmap = false;
+  
+  document.querySelectorAll('[data-colorby]').forEach(b=>b.classList.toggle('on', b.dataset.colorby==='model'));
+  document.querySelectorAll('[data-windunit]').forEach(b=>b.classList.toggle('on', b.dataset.windunit==='kt'));
+  document.getElementById('toggleEnsBtn').classList.add('on');
+  document.getElementById('toggleTrackBtn').classList.remove('on');
+  document.getElementById('toggleIntBtn').classList.remove('on');
+  document.getElementById('toggleHeatmapBtn').classList.remove('on');
+  document.getElementById('cycleLabel').textContent = "Loaded Data Successfully";
+
+  document.getElementById('uploadScreen').style.display='none';
+  document.getElementById('mainScreen').style.display='flex';
+
+  initLeaflet();
+  backToStormView();
+  renderMap();
+  renderDetail();
+}
+
+async function handleFile(file){
+  clearUploadError();
+  try{
+    let text;
+    if(file.name.toLowerCase().endsWith('.gz')){
+      const buf = new Uint8Array(await file.arrayBuffer());
+      text = window.pako.inflate(buf, {to:'string'});
+    } else {
+      text = await file.text();
+    }
+    processLoadedText(text);
+  }catch(e){
+    console.error(e);
+    showUploadError('Could not read that file (' + e.message + '). Make sure it is a plain-text ATCF a-deck, or a .gz of one.');
+  }
+}
+
+function resetToUpload(){
+  S.parsed = null; S.fix = null; S.activeCycle = null;
+  document.getElementById('mainScreen').style.display='none';
+  document.getElementById('uploadScreen').style.display='flex';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('cycleLabel').textContent = '—';
+  clearUploadError();
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+document.getElementById('fileInput').addEventListener('change', e=>{
+  if(e.target.files[0]) handleFile(e.target.files[0]);
+});
+const dz = document.getElementById('dropzone');
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove('drag'); }));
+dz.addEventListener('drop', e=>{
+  const f = e.dataTransfer.files[0];
+  if(f) handleFile(f);
+});
+
+document.querySelectorAll('[data-colorby]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-colorby]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); S.colorBy=b.dataset.colorby; renderMap(); 
+});
+
+document.querySelectorAll('[data-windunit]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-windunit]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); S.windUnit = b.dataset.windunit;
+  renderMap(); renderDetail();
+});
+
+document.getElementById('toggleEnsBtn').onclick = ()=>{
+  S.showEnsembles = !S.showEnsembles;
+  document.getElementById('toggleEnsBtn').classList.toggle('on', S.showEnsembles);
+  renderMap();
+};
+document.getElementById('toggleTrackBtn').onclick = ()=>{
+  S.showTrackModels = !S.showTrackModels;
+  document.getElementById('toggleTrackBtn').classList.toggle('on', S.showTrackModels);
+  renderMap();
+};
+document.getElementById('toggleIntBtn').onclick = ()=>{
+  S.showIntensityModels = !S.showIntensityModels;
+  document.getElementById('toggleIntBtn').classList.toggle('on', S.showIntensityModels);
+  renderMap();
+};
+document.getElementById('toggleHeatmapBtn').onclick = ()=>{
+  S.showHeatmap = !S.showHeatmap;
+  document.getElementById('toggleHeatmapBtn').classList.toggle('on', S.showHeatmap);
+  renderMap();
+};
+
+document.getElementById('reloadBtn').onclick = resetToUpload;
+
+</script>
+</body>
+</html>
