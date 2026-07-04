@@ -240,7 +240,7 @@
 
         <div class="map-toolbar" id="analysisToolbar">
           <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px">ANALYSIS · ACTIVE TAB</span>
-          <button class="tbtn" id="toggleConeBtn">Uncertainty Cone</button>
+          <button class="tbtn" id="toggleConeBtn" title="Cone is capped at +84h">Uncertainty Cone (84h)</button>
           <button class="tbtn" id="toggleDensityBtn">Strike Probability</button>
 
           <span style="margin-left:auto"></span>
@@ -512,19 +512,37 @@ function computeAgreement(tracks){
 }
 
 /* Ensemble/intensity-model uncertainty cone: interpolated center + radius
-   steps used to paint a smooth "swept" cone of overlapping soft circles. */
-function computeConeSteps(tracks, stepHours){
+   steps used to paint a smooth "swept" cone of overlapping soft circles.
+   Radius is a percentile of member distances from center (not the max),
+   so one or two outlier members don't blow the whole cone out of
+   proportion relative to a tightly clustered majority. Capped at maxTau
+   hours out, since track uncertainty visualization gets noisy/less useful
+   much beyond the 3.5-day mark. */
+function computeConeSteps(tracks, stepHours, percentile, maxTau){
   stepHours = stepHours || 6;
+  percentile = percentile || 0.8;
+  maxTau = maxTau != null ? maxTau : 84;
   const validTracks = tracks.filter(t => t.member !== 'ENS MEAN');
   if(validTracks.length < 2) return [];
 
-  const allTaus = [...new Set(validTracks.flatMap(t => t.pts.map(p => p[3])))].sort((a,b)=>a-b);
+  const median = arr => {
+    const s = [...arr].sort((a,b)=>a-b);
+    const mid = Math.floor(s.length/2);
+    return s.length % 2 ? s[mid] : (s[mid-1]+s[mid])/2;
+  };
+
+  const allTaus = [...new Set(validTracks.flatMap(t => t.pts.map(p => p[3])))]
+    .filter(tau => tau <= maxTau)
+    .sort((a,b)=>a-b);
   const known = allTaus.map(tau => {
     const pts = validTracks.map(t => t.pts.find(p => p[3] === tau)).filter(Boolean);
     if(pts.length < 2) return null;
-    const lon = pts.reduce((s,p)=>s+p[0],0) / pts.length;
-    const lat = pts.reduce((s,p)=>s+p[1],0) / pts.length;
-    const radiusKm = Math.max(...pts.map(p => haversineKm(lat, lon, p[1], p[0])));
+    // median center is more robust to an outlier member than the mean
+    const lon = median(pts.map(p=>p[0]));
+    const lat = median(pts.map(p=>p[1]));
+    const dists = pts.map(p => haversineKm(lat, lon, p[1], p[0])).sort((a,b)=>a-b);
+    const idx = Math.min(dists.length-1, Math.max(0, Math.ceil(percentile*dists.length)-1));
+    const radiusKm = dists[idx] || 0;
     return { tau, lat, lon, radiusKm };
   }).filter(Boolean);
 
@@ -613,25 +631,43 @@ function computeRIFlag(tracks){
 }
 
 /* Closest-approach calculator: given a lat/lon point of interest and a
-   radius, reports what fraction of members/models pass within it and when. */
-function computeClosestApproach(tracks, point, radiusKm){
+   radius (in statute miles), reports what fraction of members/models pass
+   within it and when. Distance is minimized along interpolated segments
+   between forecast fixes (not just the fixes themselves), since the true
+   closest pass usually falls between two 12/24h points. */
+const KM_TO_MI = 0.621371;
+function computeClosestApproach(tracks, point, radiusMi){
   const validTracks = tracks.filter(t => t.member !== 'ENS MEAN');
   const total = validTracks.length;
   if(!total || !point) return null;
+  const radiusKm = radiusMi / KM_TO_MI;
+  const SEGMENT_STEPS = 20;
 
   const results = validTracks.map(t => {
-    let minDist = Infinity, firstEntryTau = null;
-    t.pts.forEach(p => {
-      const d = haversineKm(point.lat, point.lon, p[1], p[0]);
-      if(d < minDist) minDist = d;
-      if(d <= radiusKm && (firstEntryTau === null || p[3] < firstEntryTau)) firstEntryTau = p[3];
-    });
-    return { member: t.member || t.model, minDist, firstEntryTau, within: minDist <= radiusKm };
+    const pts = [...t.pts].sort((a,b)=>a[3]-b[3]);
+    let minDistKm = Infinity, firstEntryTau = null;
+
+    const check = (lat, lon, tau) => {
+      const d = haversineKm(point.lat, point.lon, lat, lon);
+      if(d < minDistKm) minDistKm = d;
+      if(d <= radiusKm && (firstEntryTau === null || tau < firstEntryTau)) firstEntryTau = tau;
+    };
+
+    pts.forEach(p => check(p[1], p[0], p[3]));
+    for(let i=0; i<pts.length-1; i++){
+      const a = pts[i], b = pts[i+1];
+      for(let s=1; s<SEGMENT_STEPS; s++){
+        const f = s/SEGMENT_STEPS;
+        check(a[1]+(b[1]-a[1])*f, a[0]+(b[0]-a[0])*f, a[3]+(b[3]-a[3])*f);
+      }
+    }
+
+    return { member: t.member || t.model, minDistMi: minDistKm*KM_TO_MI, firstEntryTau, within: minDistKm <= radiusKm };
   });
 
   const withinResults = results.filter(r => r.within);
-  const entryTaus = withinResults.map(r => r.firstEntryTau).filter(t => t != null).sort((a,b)=>a-b);
-  const avgMinDist = results.reduce((s,r)=>s+r.minDist, 0) / total;
+  const entryTaus = withinResults.map(r => Math.round(r.firstEntryTau)).filter(t => t != null).sort((a,b)=>a-b);
+  const avgMinDistMi = results.reduce((s,r)=>s+r.minDistMi, 0) / total;
 
   return {
     total,
@@ -639,7 +675,7 @@ function computeClosestApproach(tracks, point, radiusKm){
     pct: Math.round((withinResults.length/total) * 100),
     earliestTau: entryTaus.length ? entryTaus[0] : null,
     medianTau: entryTaus.length ? entryTaus[Math.floor(entryTaus.length/2)] : null,
-    avgMinDist: Math.round(avgMinDist)
+    avgMinDist: Math.round(avgMinDistMi)
   };
 }
 
@@ -652,7 +688,7 @@ const S = {
   showEnsembles: true, showTrackModels: false, showIntensityModels: false, showHeatmap: false,
   showCone: false, showDensity: false,
   playTau: null, playing: false,
-  closestPoint: null, closestRadiusKm: 100,
+  closestPoint: null, closestRadiusMi: 60,
   colorBy: 'model', detailTab: 'ensemble', windUnit: 'kt'
 };
 let playTimer = null;
@@ -981,7 +1017,7 @@ function renderMap() {
 
   if(S.closestPoint){
     L.circle([S.closestPoint.lat, S.closestPoint.lon], {
-      radius: S.closestRadiusKm * 1000, color: '#f472b6', weight: 1.5,
+      radius: S.closestRadiusMi * 1609.34, color: '#f472b6', weight: 1.5,
       fillColor: '#f472b6', fillOpacity: 0.06, dashArray: '4,4'
     }).addTo(mapLayerGroup);
     L.circleMarker([S.closestPoint.lat, S.closestPoint.lon], {
@@ -1421,14 +1457,14 @@ function setClosestFromForm(){
   const radius = parseFloat(document.getElementById('closestRadiusInput').value);
   if(isNaN(lat) || isNaN(lon)) return;
   S.closestPoint = { lat: clamp(lat,-90,90), lon: clamp(lon,-180,180) };
-  if(!isNaN(radius) && radius > 0) S.closestRadiusKm = radius;
+  if(!isNaN(radius) && radius > 0) S.closestRadiusMi = radius;
   renderMap();
   renderDetail();
 }
 
 function applyClosestRadius(){
   const radius = parseFloat(document.getElementById('closestRadiusInput').value);
-  if(!isNaN(radius) && radius > 0) S.closestRadiusKm = radius;
+  if(!isNaN(radius) && radius > 0) S.closestRadiusMi = radius;
   renderMap();
   renderDetail();
 }
@@ -1446,7 +1482,7 @@ function renderDetail(){
   const probs = computeProbabilities(activeTracks);
   const agreement = computeAgreement(activeTracks);
   const ri = computeRIFlag(activeTracks);
-  const closest = S.closestPoint ? computeClosestApproach(activeTracks, S.closestPoint, S.closestRadiusKm) : null;
+  const closest = S.closestPoint ? computeClosestApproach(activeTracks, S.closestPoint, S.closestRadiusMi) : null;
   
   const srcLabel = isEns ? 'ENSEMBLE' : 'INTENSITY';
   const chartTitlePrefix = isEns ? 'ENSEMBLE MEMBERS' : 'INTENSITY GUIDANCE';
@@ -1518,20 +1554,20 @@ function renderDetail(){
         <div class="closest-form">
           <label>LAT<br><input type="number" id="closestLatInput" step="0.1" placeholder="20.0"></label>
           <label>LON<br><input type="number" id="closestLonInput" step="0.1" placeholder="-70.0"></label>
-          <label>RADIUS (KM)<br><input type="number" id="closestRadiusInput" step="10" value="${S.closestRadiusKm}"></label>
+          <label>RADIUS (MI)<br><input type="number" id="closestRadiusInput" step="5" value="${S.closestRadiusMi}"></label>
           <button class="tbtn on" style="align-self:flex-end;" onclick="setClosestFromForm()">Set Point</button>
         </div>
       ` : `
         <div class="closest-hint" style="margin-bottom:8px;">Target: ${S.closestPoint.lat.toFixed(2)}°${S.closestPoint.lat<0?'S':'N'}, ${Math.abs(S.closestPoint.lon).toFixed(2)}°${S.closestPoint.lon<0?'W':'E'}</div>
         <div class="closest-form" style="margin-bottom:10px;">
-          <label>RADIUS (KM)<br><input type="number" id="closestRadiusInput" step="10" value="${S.closestRadiusKm}"></label>
+          <label>RADIUS (MI)<br><input type="number" id="closestRadiusInput" step="5" value="${S.closestRadiusMi}"></label>
           <button class="tbtn" style="align-self:flex-end;" onclick="applyClosestRadius()">Apply</button>
         </div>
         ${closest ? `
         <div class="agreement-bar"><div class="fill" style="width:${closest.pct}%; background:#f472b6;"></div></div>
         <div class="agreement-sub">
-          <span style="color:#f472b6">${closest.withinCount} of ${closest.total} (${closest.pct}%) within ${S.closestRadiusKm}km</span>
-          <span>avg. closest approach ${closest.avgMinDist} km</span>
+          <span style="color:#f472b6">${closest.withinCount} of ${closest.total} (${closest.pct}%) within ${S.closestRadiusMi}mi</span>
+          <span>avg. closest approach ${closest.avgMinDist} mi</span>
           ${closest.earliestTau!=null ? `<span>earliest arrival +${closest.earliestTau}h (${formatAxisTime(cyc, closest.earliestTau)})</span>` : ''}
           ${closest.medianTau!=null ? `<span>median arrival +${closest.medianTau}h</span>` : ''}
         </div>` : `<div class="closest-hint">No ${srcLabel.toLowerCase()} data available for this cycle.</div>`}
@@ -1581,7 +1617,7 @@ function processLoadedText(text) {
   S.colorBy='model'; S.windUnit='kt';
   S.showEnsembles = true; S.showTrackModels = false; S.showIntensityModels = false; S.showHeatmap = false;
   S.showCone = false; S.showDensity = false; S.playTau = null; S.playing = false;
-  S.closestPoint = null; S.closestRadiusKm = 100;
+  S.closestPoint = null; S.closestRadiusMi = 60;
   if(playTimer){ clearInterval(playTimer); playTimer = null; }
   
   document.querySelectorAll('[data-colorby]').forEach(b=>b.classList.toggle('on', b.dataset.colorby==='model'));
@@ -1741,3 +1777,4 @@ document.getElementById('reloadBtn').onclick = resetToUpload;
 </script>
 </body>
 </html>
+
