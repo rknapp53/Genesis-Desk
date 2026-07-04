@@ -66,8 +66,9 @@
   
   /* Leaflet Map Area */
   .map-wrap{flex:1;position:relative;display:flex;flex-direction:column;background:#0c131e;}
+  .map-toolbars{position:absolute;top:0;left:0;right:0;z-index:2000;background:var(--bg);}
   .map-toolbar{display:flex;gap:6px;padding:12px;border-bottom:1px solid var(--grid);
-    align-items:center;flex-wrap:wrap;background:var(--bg);position:absolute;top:0;left:0;right:0;z-index:2000;}
+    align-items:center;flex-wrap:wrap;background:var(--bg);}
   .tbtn{font-family:var(--mono);font-size:10px;letter-spacing:.5px;padding:4px 9px;
     background:var(--panel);border:1px solid var(--line);color:var(--dim);
     border-radius:4px;cursor:pointer;transition:.15s;white-space:nowrap;}
@@ -76,6 +77,12 @@
   .tbtn-group{display:flex;gap:6px;align-items:center;transition:.2s;}
   .tbtn-group.grp-disabled{opacity:.32;filter:grayscale(1);pointer-events:none;}
   .unit-toggle .tbtn{padding:4px 8px}
+
+  .play-control{display:flex;align-items:center;gap:10px;}
+  .play-btn{width:30px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;padding:0;}
+  .play-control input[type=range]{width:180px;accent-color:var(--atl);cursor:pointer;}
+  .play-control input[type=range]:disabled{opacity:.4;cursor:not-allowed;}
+  .play-time{font-size:9.5px;color:var(--dim);letter-spacing:.5px;min-width:110px;display:inline-block;}
 
   #chartTooltip { position: fixed; background: rgba(10,14,20,.95); border: 1px solid var(--line);
     padding: 10px 14px; border-radius: 6px; font-family: var(--sans); font-size: 12px;
@@ -90,7 +97,30 @@
   .axis-ytick{position:absolute;width:34px;text-align:right;left:-42px;
     font-size:9px;color:var(--dimmer);font-family:var(--mono);}
 
-  .map-canvas{flex:1;position:relative; padding-top: 50px;}
+  .agreement-box{margin:16px 20px 0;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:8px;}
+  .agreement-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .agreement-head .lbl{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--dim);}
+  .agreement-head .score{font-family:var(--mono);font-size:20px;font-weight:700;}
+  .agreement-bar{height:8px;border-radius:4px;background:var(--grid);overflow:hidden;}
+  .agreement-bar .fill{height:100%;border-radius:4px;transition:width .3s;}
+  .agreement-sub{margin-top:8px;font-family:var(--mono);font-size:9.5px;color:var(--dimmer);display:flex;gap:16px;flex-wrap:wrap;}
+
+  .ri-box{margin:16px 20px 0;padding:14px 16px;border-radius:8px;border:1px solid var(--line);background:var(--panel);}
+  .ri-box.warn{border-color:#ff9f43;background:rgba(255,159,67,.08);}
+  .ri-box .ri-head{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;display:flex;gap:8px;align-items:center;}
+  .ri-box.warn .ri-head{color:#ff9f43;}
+  .ri-box .ri-sub{margin-top:6px;font-family:var(--mono);font-size:9.5px;color:var(--dimmer);line-height:1.6;}
+  .ri-box .ri-members{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;}
+  .ri-chip{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;background:rgba(255,159,67,.15);color:#ff9f43;border:1px solid rgba(255,159,67,.35);}
+
+  .closest-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px;}
+  .closest-form input[type=number]{width:76px;background:#0d131c;color:var(--ink);border:1px solid var(--dimmer);
+    padding:6px 8px;border-radius:5px;font-family:var(--mono);font-size:11px;outline:none;}
+  .closest-form input[type=number]:focus{border-color:var(--atl);}
+  .closest-form label{font-family:var(--mono);font-size:9px;color:var(--dimmer);letter-spacing:.5px;}
+  .closest-hint{font-family:var(--mono);font-size:9.5px;color:var(--dimmer);line-height:1.6;}
+
+  .map-canvas{flex:1;position:relative; padding-top: 100px;}
   #map { width: 100%; height: 100%; z-index: 1; background: #0a0e14; }
 
   .prob-key{position:absolute;bottom:20px;right:20px;background:rgba(10,14,20,.85);
@@ -185,31 +215,48 @@
 <div id="mainScreen">
   <div class="wrap">
     <div class="map-wrap">
-      <div class="map-toolbar">
-        <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px">DATA</span>
-        <button class="tbtn on" id="toggleEnsBtn">Ensembles</button>
-        <button class="tbtn" id="toggleTrackBtn">Track Models</button>
-        <button class="tbtn" id="toggleIntBtn">Intensity Models</button>
-        <button class="tbtn" id="toggleHeatmapBtn">MSLP Heatmap</button>
+      <div class="map-toolbars">
+        <div class="map-toolbar">
+          <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px">DATA</span>
+          <button class="tbtn on" id="toggleEnsBtn">Ensembles</button>
+          <button class="tbtn" id="toggleTrackBtn">Track Models</button>
+          <button class="tbtn" id="toggleIntBtn">Intensity Models</button>
+          <button class="tbtn" id="toggleHeatmapBtn">MSLP Heatmap</button>
 
-        <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-left:16px">WIND UNITS</span>
-        <div class="tbtn-group unit-toggle">
-          <button class="tbtn on" data-windunit="kt">KT</button>
-          <button class="tbtn" data-windunit="mph">MPH</button>
+          <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-left:16px">WIND UNITS</span>
+          <div class="tbtn-group unit-toggle">
+            <button class="tbtn on" data-windunit="kt">KT</button>
+            <button class="tbtn" data-windunit="mph">MPH</button>
+          </div>
+
+          <span style="margin-left:auto"></span>
+          <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px" id="colorByLabel">COLOR MAP TRACKS BY</span>
+          <div class="tbtn-group" id="colorByGroup">
+            <button class="tbtn on" data-colorby="model">Model</button>
+            <button class="tbtn" data-colorby="wind">Wind Speed</button>
+            <button class="tbtn" data-colorby="pressure">Pressure</button>
+          </div>
         </div>
 
-        <span style="margin-left:auto"></span>
-        <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px" id="colorByLabel">COLOR MAP TRACKS BY</span>
-        <div class="tbtn-group" id="colorByGroup">
-          <button class="tbtn on" data-colorby="model">Model</button>
-          <button class="tbtn" data-colorby="wind">Wind Speed</button>
-          <button class="tbtn" data-colorby="pressure">Pressure</button>
+        <div class="map-toolbar" id="analysisToolbar">
+          <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px">ANALYSIS · ACTIVE TAB</span>
+          <button class="tbtn" id="toggleConeBtn">Uncertainty Cone</button>
+          <button class="tbtn" id="toggleDensityBtn">Strike Probability</button>
+
+          <span style="margin-left:auto"></span>
+          <div class="play-control" id="playControl">
+            <button class="tbtn play-btn" id="playBtn">▶</button>
+            <input type="range" id="playSlider" min="0" max="120" step="6" value="0" disabled>
+            <span class="mono play-time" id="playTimeLabel">FULL FORECAST</span>
+            <button class="tbtn" id="playResetBtn" title="Reset to full forecast view">✕</button>
+          </div>
         </div>
       </div>
 
       <div class="map-canvas">
         <div id="map"></div>
         <div class="prob-key" id="intensityKey" style="display:none;"></div>
+        <div class="prob-key" id="densityKey" style="display:none; left:20px; right:auto;"></div>
       </div>
     </div>
 
@@ -416,6 +463,186 @@ function computeMetrics(tracks){
   };
 }
 
+/* ---- geo / ensemble-analysis helpers ---- */
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+function haversineKm(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const dLat = (lat2-lat1) * Math.PI/180, dLon = (lon2-lon1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+/* Model agreement score: how tightly clustered the members/models are on
+   track position and wind, averaged across all forecast hours. Higher = more agreement. */
+function computeAgreement(tracks){
+  const validTracks = tracks.filter(t => t.member !== 'ENS MEAN');
+  if(validTracks.length < 2) return null;
+
+  const allTaus = [...new Set(validTracks.flatMap(t => t.pts.map(p => p[3])))].sort((a,b)=>a-b);
+  let trackSpreadSum = 0, trackSpreadN = 0, windSpreadSum = 0, windSpreadN = 0;
+
+  allTaus.forEach(tau => {
+    const pts = validTracks.map(t => t.pts.find(p => p[3] === tau)).filter(Boolean);
+    if(pts.length < 2) return;
+
+    const meanLon = pts.reduce((s,p)=>s+p[0],0) / pts.length;
+    const meanLat = pts.reduce((s,p)=>s+p[1],0) / pts.length;
+    const avgDist = pts.reduce((s,p)=> s + haversineKm(meanLat, meanLon, p[1], p[0]), 0) / pts.length;
+    trackSpreadSum += avgDist; trackSpreadN++;
+
+    const winds = pts.map(p=>p[2]);
+    const meanWind = winds.reduce((a,b)=>a+b,0) / winds.length;
+    const windStd = Math.sqrt(winds.reduce((s,w)=> s+(w-meanWind)**2, 0) / winds.length);
+    windSpreadSum += windStd; windSpreadN++;
+  });
+
+  const avgTrackSpreadKm = trackSpreadN ? trackSpreadSum/trackSpreadN : 0;
+  const avgWindSpreadKt = windSpreadN ? windSpreadSum/windSpreadN : 0;
+
+  // Normalize: ~0km/0kt spread => 100, ~400km / ~40kt spread => 0
+  const trackScore = clamp(100 - (avgTrackSpreadKm/400)*100, 0, 100);
+  const windScore = clamp(100 - (avgWindSpreadKt/40)*100, 0, 100);
+  const score = Math.round(trackScore*0.6 + windScore*0.4);
+
+  let label = 'LOW AGREEMENT', color = '#ff4757';
+  if(score >= 75){ label = 'HIGH AGREEMENT'; color = '#5eead4'; }
+  else if(score >= 45){ label = 'MODERATE AGREEMENT'; color = '#ffd93d'; }
+
+  return { score, label, color, avgTrackSpreadKm: Math.round(avgTrackSpreadKm), avgWindSpreadKt: Math.round(avgWindSpreadKt), n: validTracks.length };
+}
+
+/* Ensemble/intensity-model uncertainty cone: interpolated center + radius
+   steps used to paint a smooth "swept" cone of overlapping soft circles. */
+function computeConeSteps(tracks, stepHours){
+  stepHours = stepHours || 6;
+  const validTracks = tracks.filter(t => t.member !== 'ENS MEAN');
+  if(validTracks.length < 2) return [];
+
+  const allTaus = [...new Set(validTracks.flatMap(t => t.pts.map(p => p[3])))].sort((a,b)=>a-b);
+  const known = allTaus.map(tau => {
+    const pts = validTracks.map(t => t.pts.find(p => p[3] === tau)).filter(Boolean);
+    if(pts.length < 2) return null;
+    const lon = pts.reduce((s,p)=>s+p[0],0) / pts.length;
+    const lat = pts.reduce((s,p)=>s+p[1],0) / pts.length;
+    const radiusKm = Math.max(...pts.map(p => haversineKm(lat, lon, p[1], p[0])));
+    return { tau, lat, lon, radiusKm };
+  }).filter(Boolean);
+
+  if(known.length < 2) return known.map(k => ({lat:k.lat, lon:k.lon, radiusKm:k.radiusKm}));
+
+  const steps = [];
+  for(let i=0; i<known.length-1; i++){
+    const a = known[i], b = known[i+1];
+    const span = b.tau - a.tau;
+    const n = Math.max(1, Math.round(span / stepHours));
+    for(let s=0; s<n; s++){
+      const f = s/n;
+      steps.push({
+        lat: a.lat + (b.lat-a.lat)*f,
+        lon: a.lon + (b.lon-a.lon)*f,
+        radiusKm: a.radiusKm + (b.radiusKm-a.radiusKm)*f
+      });
+    }
+  }
+  const last = known[known.length-1];
+  steps.push({lat:last.lat, lon:last.lon, radiusKm:last.radiusKm});
+  return steps;
+}
+
+/* Track density / strike-probability grid: what fraction of members/models
+   pass through each lat/lon cell, anywhere along their forecast track. */
+function computeDensityGrid(tracks, cellDeg){
+  cellDeg = cellDeg || 1;
+  const validTracks = tracks.filter(t => t.member !== 'ENS MEAN');
+  const total = validTracks.length;
+  if(!total) return { cells: [], total: 0 };
+
+  const counts = {};
+  validTracks.forEach(t => {
+    const seen = new Set();
+    t.pts.forEach(p => {
+      const lonIdx = Math.floor(p[0]/cellDeg), latIdx = Math.floor(p[1]/cellDeg);
+      seen.add(latIdx + ',' + lonIdx);
+    });
+    seen.forEach(key => { counts[key] = (counts[key]||0) + 1; });
+  });
+
+  const cells = Object.entries(counts).map(([key, count]) => {
+    const [latIdx, lonIdx] = key.split(',').map(Number);
+    return {
+      lat0: latIdx*cellDeg, lat1: (latIdx+1)*cellDeg,
+      lon0: lonIdx*cellDeg, lon1: (lonIdx+1)*cellDeg,
+      prob: count/total
+    };
+  });
+  return { cells, total };
+}
+const DENSITY_STOPS = [[0,'#1e3a5f'],[0.2,'#3fb6ff'],[0.4,'#5eead4'],[0.6,'#ffd93d'],[0.8,'#ff9f43'],[1,'#ff4757']];
+
+/* Rapid intensification flag: NHC's standard threshold is a ≥30kt increase
+   in sustained wind within any 24h window. Flags which members/models hit it
+   and how soon. */
+function computeRIFlag(tracks){
+  const validTracks = tracks.filter(t => t.member !== 'ENS MEAN');
+  const total = validTracks.length;
+  if(!total) return null;
+
+  const flagged = [];
+  validTracks.forEach(t => {
+    const pts = [...t.pts].sort((a,b)=>a[3]-b[3]);
+    let onsetTau = null, maxJump = 0;
+    for(let i=0; i<pts.length; i++){
+      for(let j=i+1; j<pts.length; j++){
+        const dTau = pts[j][3] - pts[i][3];
+        if(dTau > 24) break; // sorted by tau, so nothing further from i will qualify either
+        if(dTau <= 0) continue;
+        const dWind = pts[j][2] - pts[i][2];
+        if(dWind >= 30){
+          if(dWind > maxJump) maxJump = dWind;
+          if(onsetTau === null || pts[i][3] < onsetTau) onsetTau = pts[i][3];
+        }
+      }
+    }
+    if(onsetTau !== null){
+      flagged.push({ member: t.member || t.model, onsetTau, jumpKt: maxJump });
+    }
+  });
+
+  flagged.sort((a,b) => a.onsetTau - b.onsetTau);
+  return { total, flagged, count: flagged.length, pct: Math.round((flagged.length/total)*100) };
+}
+
+/* Closest-approach calculator: given a lat/lon point of interest and a
+   radius, reports what fraction of members/models pass within it and when. */
+function computeClosestApproach(tracks, point, radiusKm){
+  const validTracks = tracks.filter(t => t.member !== 'ENS MEAN');
+  const total = validTracks.length;
+  if(!total || !point) return null;
+
+  const results = validTracks.map(t => {
+    let minDist = Infinity, firstEntryTau = null;
+    t.pts.forEach(p => {
+      const d = haversineKm(point.lat, point.lon, p[1], p[0]);
+      if(d < minDist) minDist = d;
+      if(d <= radiusKm && (firstEntryTau === null || p[3] < firstEntryTau)) firstEntryTau = p[3];
+    });
+    return { member: t.member || t.model, minDist, firstEntryTau, within: minDist <= radiusKm };
+  });
+
+  const withinResults = results.filter(r => r.within);
+  const entryTaus = withinResults.map(r => r.firstEntryTau).filter(t => t != null).sort((a,b)=>a-b);
+  const avgMinDist = results.reduce((s,r)=>s+r.minDist, 0) / total;
+
+  return {
+    total,
+    withinCount: withinResults.length,
+    pct: Math.round((withinResults.length/total) * 100),
+    earliestTau: entryTaus.length ? entryTaus[0] : null,
+    medianTau: entryTaus.length ? entryTaus[Math.floor(entryTaus.length/2)] : null,
+    avgMinDist: Math.round(avgMinDist)
+  };
+}
+
 /* ============================================================
    UI STATE & COLOR GRADIENTS
    ============================================================ */
@@ -423,8 +650,12 @@ const S = {
   parsed: null, fix: null,
   activeCycle: null,
   showEnsembles: true, showTrackModels: false, showIntensityModels: false, showHeatmap: false,
+  showCone: false, showDensity: false,
+  playTau: null, playing: false,
+  closestPoint: null, closestRadiusKm: 100,
   colorBy: 'model', detailTab: 'ensemble', windUnit: 'kt'
 };
+let playTimer = null;
 
 /* ---- wind unit helpers ---- */
 const KT_TO_MPH = 1.15078;
@@ -527,6 +758,12 @@ function initLeaflet() {
   }).addTo(leafletMap);
   
   mapLayerGroup = L.layerGroup().addTo(leafletMap);
+
+  leafletMap.on('click', (e) => {
+    S.closestPoint = { lat: e.latlng.lat, lon: e.latlng.lng };
+    renderMap();
+    renderDetail();
+  });
 }
 
 function renderIntensityKey(){
@@ -542,8 +779,21 @@ function renderIntensityKey(){
     <div class="ends">${ends.map(e=>`<span>${e}</span>`).join('')}</div>`;
 }
 
+function renderDensityKey(total){
+  const el = document.getElementById('densityKey');
+  if(!S.showDensity || !total){ el.style.display='none'; return; }
+  el.style.display='';
+  const bgGrad = 'linear-gradient(to right, ' + DENSITY_STOPS.map(s=>s[1]).join(', ') + ')';
+  const tabLabel = S.detailTab==='ensemble' ? 'ENSEMBLE' : 'INTENSITY MODEL';
+  el.innerHTML = `
+    <div style="margin-bottom:4px;font-weight:600">STRIKE PROBABILITY · ${tabLabel} (n=${total})</div>
+    <div class="scale" style="background:${bgGrad}"></div>
+    <div class="ends"><span>0%</span><span>100%</span></div>`;
+}
+
 function renderMapTracks(tracks, modelClassColor) {
   tracks.forEach(tr => {
+    if(!tr.pts.length) return;
     const isMean = tr.member === 'ENS MEAN';
     const color = isMean ? '#ffffff' : (modelClassColor || ENS_FAMILY_COLOR[ensembleFamily(tr.member || tr.model)] || '#94a3b8');
     const maxV = Math.max(...tr.pts.map(p=>p[2]));
@@ -559,20 +809,22 @@ function renderMapTracks(tracks, modelClassColor) {
     const opacity = isMean ? 1 : 0.65;
 
     // Draw lines
-    if(S.colorBy === 'model') {
-      const latlngs = tr.pts.map(p => [p[1], p[0]]); // Leaflet uses [Lat, Lon]
-      const line = L.polyline(latlngs, {color: color, weight: baseWidth, opacity: opacity});
-      line.bindTooltip(ttHtml, {sticky: true, className: 'map-tt'});
-      line.addTo(mapLayerGroup);
-    } else {
-      const trackGroup = L.featureGroup();
-      for(let i=1; i<tr.pts.length; i++){
-        const p1 = tr.pts[i-1], p2 = tr.pts[i];
-        const segCol = isMean ? '#fff' : trackSegColor(p1, p2);
-        L.polyline([[p1[1], p1[0]], [p2[1], p2[0]]], {color: segCol, weight: baseWidth+0.5, opacity: opacity}).addTo(trackGroup);
+    if(tr.pts.length > 1){
+      if(S.colorBy === 'model') {
+        const latlngs = tr.pts.map(p => [p[1], p[0]]); // Leaflet uses [Lat, Lon]
+        const line = L.polyline(latlngs, {color: color, weight: baseWidth, opacity: opacity});
+        line.bindTooltip(ttHtml, {sticky: true, className: 'map-tt'});
+        line.addTo(mapLayerGroup);
+      } else {
+        const trackGroup = L.featureGroup();
+        for(let i=1; i<tr.pts.length; i++){
+          const p1 = tr.pts[i-1], p2 = tr.pts[i];
+          const segCol = isMean ? '#fff' : trackSegColor(p1, p2);
+          L.polyline([[p1[1], p1[0]], [p2[1], p2[0]]], {color: segCol, weight: baseWidth+0.5, opacity: opacity}).addTo(trackGroup);
+        }
+        trackGroup.bindTooltip(ttHtml, {sticky: true, className: 'map-tt'});
+        trackGroup.addTo(mapLayerGroup);
       }
-      trackGroup.bindTooltip(ttHtml, {sticky: true, className: 'map-tt'});
-      trackGroup.addTo(mapLayerGroup);
     }
 
     // Draw Endpoints
@@ -588,6 +840,33 @@ function renderMapTracks(tracks, modelClassColor) {
   });
 }
 
+/* Highlighted "now" markers used during play-back, drawn at each track's
+   most recent position at-or-before the scrubbed forecast hour. */
+function renderPlayMarkers(tracks, ringColor){
+  tracks.forEach(tr => {
+    if(!tr.pts.length) return;
+    const isMean = tr.member === 'ENS MEAN';
+    const last = tr.pts[tr.pts.length-1];
+    const memName = tr.member || tr.model;
+    const ttHtml = `<strong style="color:var(--atl);font-family:var(--mono);font-size:13px;">${memName}</strong><br>
+                    ${formatAxisTime(S.activeCycle, last[3])}<br>
+                    Wind: <span style="color:var(--ink);font-family:var(--mono)">${windDisp(last[2], S.windUnit)} ${windSuffix(S.windUnit)}</span>`;
+    const col = ringColor || (isMean ? '#ffffff' : (ENS_FAMILY_COLOR[ensembleFamily(memName)] || '#94a3b8'));
+    const ring = L.circleMarker([last[1], last[0]], {
+      radius: isMean ? 7 : 5, color: '#ffffff', weight: isMean ? 2 : 1.5,
+      fillColor: col, fillOpacity: 0.95
+    });
+    ring.bindTooltip(ttHtml, {sticky: true, className: 'map-tt'});
+    ring.addTo(mapLayerGroup);
+  });
+}
+
+function truncateTracksToTau(tracks, tau){
+  return tracks
+    .map(t => ({ ...t, pts: t.pts.filter(p => p[3] <= tau) }))
+    .filter(t => t.pts.length > 0);
+}
+
 function updateColorByAvailability(){
   const grp = document.getElementById('colorByGroup');
   const lbl = document.getElementById('colorByLabel');
@@ -596,18 +875,57 @@ function updateColorByAvailability(){
   if(lbl) lbl.style.opacity = S.showHeatmap ? .32 : 1;
 }
 
+function syncPlayControl(maxTau){
+  const slider = document.getElementById('playSlider');
+  const label = document.getElementById('playTimeLabel');
+  const playBtn = document.getElementById('playBtn');
+  if(!slider) return;
+
+  if(maxTau == null){
+    slider.disabled = true; slider.value = 0;
+    playBtn.disabled = true;
+    label.textContent = 'FULL FORECAST';
+    return;
+  }
+  playBtn.disabled = false;
+  slider.disabled = false;
+  slider.max = maxTau;
+  if(S.playTau == null){
+    slider.value = maxTau;
+    label.textContent = 'FULL FORECAST';
+  } else {
+    slider.value = S.playTau;
+    label.textContent = formatAxisTime(S.activeCycle, S.playTau) + ` (+${S.playTau}h)`;
+  }
+}
+
 function renderMap() {
   if (!leafletMap) initLeaflet();
   mapLayerGroup.clearLayers();
   renderIntensityKey();
   updateColorByAvailability();
   
-  if(!S.parsed || !S.activeCycle) return;
+  if(!S.parsed || !S.activeCycle){ syncPlayControl(null); document.getElementById('densityKey').style.display='none'; return; }
 
   const cyc = S.activeCycle;
-  const ensTracks = S.parsed.ensembles.byCycle[cyc] || [];
-  const trackTracks = S.parsed.trackModels.byCycle[cyc] || [];
-  const intTracks = S.parsed.intensityModels.byCycle[cyc] || [];
+  let ensTracks = S.parsed.ensembles.byCycle[cyc] || [];
+  let trackTracks = S.parsed.trackModels.byCycle[cyc] || [];
+  let intTracks = S.parsed.intensityModels.byCycle[cyc] || [];
+
+  // Sync the play scrubber to whichever groups are currently shown on the map
+  const shownGroups = [];
+  if(S.showEnsembles) shownGroups.push(...ensTracks);
+  if(S.showTrackModels) shownGroups.push(...trackTracks);
+  if(S.showIntensityModels) shownGroups.push(...intTracks);
+  const allTausShown = shownGroups.flatMap(t => t.pts.map(p => p[3]));
+  const maxTauShown = allTausShown.length ? Math.max(...allTausShown) : null;
+  syncPlayControl(maxTauShown);
+
+  if(S.playTau != null){
+    ensTracks = truncateTracksToTau(ensTracks, S.playTau);
+    trackTracks = truncateTracksToTau(trackTracks, S.playTau);
+    intTracks = truncateTracksToTau(intTracks, S.playTau);
+  }
 
   if(S.showHeatmap && ensTracks.length > 0) {
     ensTracks.forEach(tr => {
@@ -623,9 +941,53 @@ function renderMap() {
     });
   }
 
+  // Cone + density are scoped to whichever detail tab is active (Ensembles vs Intensity Models)
+  const tabTracks = S.detailTab === 'ensemble'
+    ? (S.parsed.ensembles.byCycle[cyc] || [])
+    : (S.parsed.intensityModels.byCycle[cyc] || []);
+  const tabColor = S.detailTab === 'ensemble' ? '#3fb6ff' : '#ff9f43';
+
+  if(S.showCone){
+    const steps = computeConeSteps(tabTracks, 6);
+    steps.forEach(s => {
+      L.circle([s.lat, s.lon], {
+        radius: Math.max(s.radiusKm, 15) * 1000,
+        stroke: false, fillColor: tabColor, fillOpacity: 0.05
+      }).addTo(mapLayerGroup);
+    });
+  }
+
+  if(S.showDensity){
+    const { cells, total } = computeDensityGrid(tabTracks, 1);
+    cells.forEach(c => {
+      L.rectangle([[c.lat0, c.lon0],[c.lat1, c.lon1]], {
+        stroke: false, fillColor: interpColor(c.prob, DENSITY_STOPS), fillOpacity: 0.12 + c.prob*0.45
+      }).addTo(mapLayerGroup);
+    });
+    renderDensityKey(total);
+  } else {
+    document.getElementById('densityKey').style.display='none';
+  }
+
   if(S.showEnsembles) renderMapTracks(ensTracks, null);
   if(S.showTrackModels) renderMapTracks(trackTracks, '#3fb6ff');
   if(S.showIntensityModels) renderMapTracks(intTracks, '#ff9f43');
+
+  if(S.playTau != null){
+    if(S.showEnsembles) renderPlayMarkers(ensTracks, null);
+    if(S.showTrackModels) renderPlayMarkers(trackTracks, '#3fb6ff');
+    if(S.showIntensityModels) renderPlayMarkers(intTracks, '#ff9f43');
+  }
+
+  if(S.closestPoint){
+    L.circle([S.closestPoint.lat, S.closestPoint.lon], {
+      radius: S.closestRadiusKm * 1000, color: '#f472b6', weight: 1.5,
+      fillColor: '#f472b6', fillOpacity: 0.06, dashArray: '4,4'
+    }).addTo(mapLayerGroup);
+    L.circleMarker([S.closestPoint.lat, S.closestPoint.lon], {
+      radius: 7, color: '#ffffff', weight: 2, fillColor: '#f472b6', fillOpacity: 1
+    }).bindTooltip('Target point', {permanent:false, className:'map-tt'}).addTo(mapLayerGroup);
+  }
 
   // Note: Storm Center Fix marker removed per request
 }
@@ -997,6 +1359,13 @@ function buildChart(tracksList, mode, title, noDataMsg, cyc){
   };
   const payloadJson = JSON.stringify(payload).replace(/</g, '\\u003c').replace(/'/g, '&#39;');
 
+  let nowCursor = '';
+  if(S.playTau != null && S.playTau <= maxTau){
+    const nowPct = (S.playTau/maxTau)*100;
+    nowCursor = `<line x1="${nowPct}" y1="0" x2="${nowPct}" y2="100" stroke="#ffffff" stroke-width="1.5" vector-effect="non-scaling-stroke" opacity="0.85"/>
+      <circle cx="${nowPct}" cy="100" r="1.6" fill="#ffffff"/>`;
+  }
+
   return `
     <div class="chart-wrap" data-chart-payload='${payloadJson}'>
       <div class="sect-h" style="padding-right: 80px;">${title}</div>
@@ -1008,6 +1377,7 @@ function buildChart(tracksList, mode, title, noDataMsg, cyc){
           <line x1="0" y1="100" x2="100" y2="100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke"/>
           <line x1="0" y1="0" x2="0" y2="100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke"/>
           ${svgContent}
+          ${nowCursor}
         </svg>
         ${yGuides}
         ${xLabels}
@@ -1025,6 +1395,8 @@ function probRow(label, p, color){
 }
 
 function setCycle(cyc) {
+  stopPlayback();
+  S.playTau = null;
   S.activeCycle = cyc;
   S.fix = currentFix(S.parsed, cyc);
   renderMap();
@@ -1033,6 +1405,31 @@ function setCycle(cyc) {
 
 function setDetailTab(tab) {
   S.detailTab = tab;
+  renderMap();
+  renderDetail();
+}
+
+function clearClosestPoint(){
+  S.closestPoint = null;
+  renderMap();
+  renderDetail();
+}
+
+function setClosestFromForm(){
+  const lat = parseFloat(document.getElementById('closestLatInput').value);
+  const lon = parseFloat(document.getElementById('closestLonInput').value);
+  const radius = parseFloat(document.getElementById('closestRadiusInput').value);
+  if(isNaN(lat) || isNaN(lon)) return;
+  S.closestPoint = { lat: clamp(lat,-90,90), lon: clamp(lon,-180,180) };
+  if(!isNaN(radius) && radius > 0) S.closestRadiusKm = radius;
+  renderMap();
+  renderDetail();
+}
+
+function applyClosestRadius(){
+  const radius = parseFloat(document.getElementById('closestRadiusInput').value);
+  if(!isNaN(radius) && radius > 0) S.closestRadiusKm = radius;
+  renderMap();
   renderDetail();
 }
 
@@ -1047,6 +1444,9 @@ function renderDetail(){
   
   const metrics = computeMetrics(activeTracks);
   const probs = computeProbabilities(activeTracks);
+  const agreement = computeAgreement(activeTracks);
+  const ri = computeRIFlag(activeTracks);
+  const closest = S.closestPoint ? computeClosestApproach(activeTracks, S.closestPoint, S.closestRadiusKm) : null;
   
   const srcLabel = isEns ? 'ENSEMBLE' : 'INTENSITY';
   const chartTitlePrefix = isEns ? 'ENSEMBLE MEMBERS' : 'INTENSITY GUIDANCE';
@@ -1080,6 +1480,62 @@ function renderDetail(){
       <div class="metric"><div class="v">${fmt(fix&&fix.pres)}<span style="font-size:11px;color:var(--dim)"> mb</span></div><div class="k">CURRENT PRESSURE (EST.)</div></div>
       <div class="metric"><div class="v">${metrics.meanVmax ? windDisp(metrics.meanVmax, S.windUnit) : '—'}<span style="font-size:11px;color:var(--dim)"> ${windSuffix(S.windUnit)}</span></div><div class="k">${srcLabel} MEAN PEAK WIND</div></div>
       <div class="metric"><div class="v">${metrics.meanMinP && metrics.meanMinP !== 1013 ? metrics.meanMinP : '—'}<span style="font-size:11px;color:var(--dim)"> mb</span></div><div class="k">${srcLabel} MEAN MIN PRESSURE</div></div>
+    </div>
+
+    ${ri ? (ri.count > 0 ? `
+    <div class="ri-box warn">
+      <div class="ri-head">⚠ RAPID INTENSIFICATION POTENTIAL</div>
+      <div class="ri-sub">${ri.count} of ${ri.total} ${srcLabel.toLowerCase()} members (${ri.pct}%) show a ≥30kt increase within a 24h window.<br>
+      Earliest onset: +${ri.flagged[0].onsetTau}h (${formatAxisTime(cyc, ri.flagged[0].onsetTau)}), peak jump ${windDisp(Math.max(...ri.flagged.map(f=>f.jumpKt)), S.windUnit)} ${windSuffix(S.windUnit)}/24h.</div>
+      <div class="ri-members">${ri.flagged.map(f => `<span class="ri-chip">${f.member} +${f.onsetTau}h</span>`).join('')}</div>
+    </div>` : `
+    <div class="ri-box">
+      <div class="ri-head" style="color:var(--dim)">RAPID INTENSIFICATION</div>
+      <div class="ri-sub">No ${srcLabel.toLowerCase()} members show a ≥30kt/24h increase through the forecast period.</div>
+    </div>`) : ''}
+
+    ${agreement ? `
+    <div class="agreement-box">
+      <div class="agreement-head">
+        <span class="lbl">MODEL AGREEMENT · ${srcLabel} (n=${agreement.n})</span>
+        <span class="score" style="color:${agreement.color}">${agreement.score}</span>
+      </div>
+      <div class="agreement-bar"><div class="fill" style="width:${agreement.score}%; background:${agreement.color};"></div></div>
+      <div class="agreement-sub">
+        <span style="color:${agreement.color}">${agreement.label}</span>
+        <span>±${agreement.avgTrackSpreadKm} km track spread</span>
+        <span>±${windDisp(agreement.avgWindSpreadKt, S.windUnit)} ${windSuffix(S.windUnit)} wind spread</span>
+      </div>
+    </div>` : ''}
+
+    <div class="agreement-box">
+      <div class="agreement-head">
+        <span class="lbl">CLOSEST APPROACH · ${srcLabel}</span>
+        ${S.closestPoint ? `<button class="tbtn" style="padding:2px 8px;font-size:9px;" onclick="clearClosestPoint()">✕ Clear</button>` : ''}
+      </div>
+      ${!S.closestPoint ? `
+        <div class="closest-hint">Click anywhere on the map to check strike odds for that location, or enter coordinates:</div>
+        <div class="closest-form">
+          <label>LAT<br><input type="number" id="closestLatInput" step="0.1" placeholder="20.0"></label>
+          <label>LON<br><input type="number" id="closestLonInput" step="0.1" placeholder="-70.0"></label>
+          <label>RADIUS (KM)<br><input type="number" id="closestRadiusInput" step="10" value="${S.closestRadiusKm}"></label>
+          <button class="tbtn on" style="align-self:flex-end;" onclick="setClosestFromForm()">Set Point</button>
+        </div>
+      ` : `
+        <div class="closest-hint" style="margin-bottom:8px;">Target: ${S.closestPoint.lat.toFixed(2)}°${S.closestPoint.lat<0?'S':'N'}, ${Math.abs(S.closestPoint.lon).toFixed(2)}°${S.closestPoint.lon<0?'W':'E'}</div>
+        <div class="closest-form" style="margin-bottom:10px;">
+          <label>RADIUS (KM)<br><input type="number" id="closestRadiusInput" step="10" value="${S.closestRadiusKm}"></label>
+          <button class="tbtn" style="align-self:flex-end;" onclick="applyClosestRadius()">Apply</button>
+        </div>
+        ${closest ? `
+        <div class="agreement-bar"><div class="fill" style="width:${closest.pct}%; background:#f472b6;"></div></div>
+        <div class="agreement-sub">
+          <span style="color:#f472b6">${closest.withinCount} of ${closest.total} (${closest.pct}%) within ${S.closestRadiusKm}km</span>
+          <span>avg. closest approach ${closest.avgMinDist} km</span>
+          ${closest.earliestTau!=null ? `<span>earliest arrival +${closest.earliestTau}h (${formatAxisTime(cyc, closest.earliestTau)})</span>` : ''}
+          ${closest.medianTau!=null ? `<span>median arrival +${closest.medianTau}h</span>` : ''}
+        </div>` : `<div class="closest-hint">No ${srcLabel.toLowerCase()} data available for this cycle.</div>`}
+      `}
     </div>
 
     <div class="sect-h">PROBABILITY DISTRIBUTION (${probs.total} ${isEns ? 'MEMBERS' : 'MODELS'})</div>
@@ -1124,6 +1580,9 @@ function processLoadedText(text) {
   
   S.colorBy='model'; S.windUnit='kt';
   S.showEnsembles = true; S.showTrackModels = false; S.showIntensityModels = false; S.showHeatmap = false;
+  S.showCone = false; S.showDensity = false; S.playTau = null; S.playing = false;
+  S.closestPoint = null; S.closestRadiusKm = 100;
+  if(playTimer){ clearInterval(playTimer); playTimer = null; }
   
   document.querySelectorAll('[data-colorby]').forEach(b=>b.classList.toggle('on', b.dataset.colorby==='model'));
   document.querySelectorAll('[data-windunit]').forEach(b=>b.classList.toggle('on', b.dataset.windunit==='kt'));
@@ -1131,6 +1590,9 @@ function processLoadedText(text) {
   document.getElementById('toggleTrackBtn').classList.remove('on');
   document.getElementById('toggleIntBtn').classList.remove('on');
   document.getElementById('toggleHeatmapBtn').classList.remove('on');
+  document.getElementById('toggleConeBtn').classList.remove('on');
+  document.getElementById('toggleDensityBtn').classList.remove('on');
+  document.getElementById('playBtn').textContent = '▶';
   document.getElementById('cycleLabel').textContent = "Loaded Data Successfully";
 
   document.getElementById('uploadScreen').style.display='none';
@@ -1160,6 +1622,7 @@ async function handleFile(file){
 }
 
 function resetToUpload(){
+  stopPlayback();
   S.parsed = null; S.fix = null; S.activeCycle = null;
   document.getElementById('mainScreen').style.display='none';
   document.getElementById('uploadScreen').style.display='flex';
@@ -1212,6 +1675,65 @@ document.getElementById('toggleHeatmapBtn').onclick = ()=>{
   S.showHeatmap = !S.showHeatmap;
   document.getElementById('toggleHeatmapBtn').classList.toggle('on', S.showHeatmap);
   renderMap();
+};
+
+document.getElementById('toggleConeBtn').onclick = ()=>{
+  S.showCone = !S.showCone;
+  document.getElementById('toggleConeBtn').classList.toggle('on', S.showCone);
+  renderMap();
+};
+document.getElementById('toggleDensityBtn').onclick = ()=>{
+  S.showDensity = !S.showDensity;
+  document.getElementById('toggleDensityBtn').classList.toggle('on', S.showDensity);
+  renderMap();
+};
+
+function stopPlayback(){
+  S.playing = false;
+  if(playTimer){ clearInterval(playTimer); playTimer = null; }
+  document.getElementById('playBtn').textContent = '▶';
+}
+
+function stepPlayback(){
+  const slider = document.getElementById('playSlider');
+  const max = Number(slider.max) || 0;
+  const step = Number(slider.step) || 6;
+  const cur = S.playTau == null ? 0 : S.playTau;
+  const next = cur + step;
+  if(next > max){
+    S.playTau = max;
+    renderMap(); renderDetail();
+    stopPlayback();
+    return;
+  }
+  S.playTau = next;
+  renderMap(); renderDetail();
+}
+
+document.getElementById('playBtn').onclick = ()=>{
+  const slider = document.getElementById('playSlider');
+  if(slider.disabled) return;
+  if(S.playing){
+    stopPlayback();
+    return;
+  }
+  if(S.playTau == null || S.playTau >= Number(slider.max)) S.playTau = 0;
+  S.playing = true;
+  document.getElementById('playBtn').textContent = '❚❚';
+  renderMap(); renderDetail();
+  playTimer = setInterval(stepPlayback, 700);
+};
+
+document.getElementById('playSlider').oninput = (e)=>{
+  stopPlayback();
+  S.playTau = Number(e.target.value);
+  renderMap(); renderDetail();
+};
+
+document.getElementById('playResetBtn').onclick = ()=>{
+  stopPlayback();
+  S.playTau = null;
+  renderMap(); renderDetail();
 };
 
 document.getElementById('reloadBtn').onclick = resetToUpload;
