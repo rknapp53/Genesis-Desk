@@ -85,6 +85,41 @@
   .upload-error{margin-top:16px;padding:12px 16px;border-radius:8px;background:rgba(255,71,87,.1);
     border:1px solid rgba(255,71,87,.35);color:#ff8a94;font-family:var(--mono);font-size:12px;display:none;line-height:1.5;}
 
+  /* ---- user guide button + modal ---- */
+  .guide-btn{font-family:var(--mono);font-size:11px;letter-spacing:.5px;padding:8px 14px;
+    background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:8px;
+    cursor:pointer;transition:.15s;white-space:nowrap;flex-shrink:0;}
+  .guide-btn:hover{color:var(--ink);border-color:var(--atl);}
+
+  #guideOverlay{display:none;position:fixed;inset:0;background:rgba(5,8,13,.75);
+    backdrop-filter:blur(4px);z-index:5000;align-items:flex-start;justify-content:center;
+    padding:40px 20px;overflow-y:auto;}
+  #guideOverlay.show{display:flex;}
+  .guide-modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    max-width:760px;width:100%;padding:0;box-shadow:0 20px 60px rgba(0,0,0,.6);margin-bottom:40px;}
+  .guide-head{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line);
+    border-radius:14px 14px 0 0;padding:20px 28px;display:flex;justify-content:space-between;
+    align-items:center;z-index:2;}
+  .guide-head h2{font-family:var(--mono);font-size:15px;letter-spacing:1px;color:var(--ink);font-weight:700;}
+  .guide-close{font-family:var(--mono);font-size:13px;color:var(--dim);background:none;
+    border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;transition:.15s;}
+  .guide-close:hover{color:var(--ink);border-color:var(--dimmer);}
+  .guide-body{padding:8px 28px 32px;}
+  .guide-body h3{font-family:var(--mono);font-size:12px;letter-spacing:1.2px;text-transform:uppercase;
+    color:var(--atl);margin:26px 0 10px;padding-top:18px;border-top:1px solid var(--line);}
+  .guide-body h3:first-child{margin-top:18px;padding-top:0;border-top:none;}
+  .guide-body p{font-size:13.5px;line-height:1.7;color:var(--dim);margin:0 0 10px;}
+  .guide-body ul{margin:0 0 10px 18px;padding:0;}
+  .guide-body li{font-size:13px;line-height:1.85;color:var(--ink);}
+  .guide-body li b{color:var(--ink);font-weight:600;}
+  .guide-body li .gk{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;
+    color:#06101c;background:var(--atl);border-radius:4px;padding:1px 7px;margin-right:6px;
+    letter-spacing:.3px;white-space:nowrap;}
+  .guide-body code{font-family:var(--mono);font-size:11.5px;background:var(--grid);
+    padding:1px 6px;border-radius:4px;color:var(--low);}
+  .guide-note{margin-top:6px;padding:10px 14px;background:rgba(63,182,255,.08);
+    border:1px solid rgba(63,182,255,.25);border-radius:8px;font-size:12.5px;color:var(--dim);line-height:1.6;}
+
   /* ---- layout ---- */
   #mainScreen{display:none;flex:1;min-height:0;}
   .wrap{display:flex;flex:1;min-height:0;position:relative;}
@@ -164,6 +199,15 @@
   .leaflet-tooltip-left.map-tt::before, .leaflet-tooltip-right.map-tt::before,
   .leaflet-tooltip-top.map-tt::before, .leaflet-tooltip-bottom.map-tt::before { display: none; }
 
+  /* City reference markers/labels */
+  .city-dot{width:4px;height:4px;border-radius:50%;background:#8b98a8;
+    box-shadow:0 0 0 1px rgba(0,0,0,.4);}
+  .city-dot.tier1{width:5px;height:5px;background:#c7d0da;}
+  .city-label{font-family:var(--mono);font-size:9.5px;color:#c7d0da;white-space:nowrap;
+    text-shadow:0 1px 3px rgba(0,0,0,.9), 0 0 4px rgba(0,0,0,.9);letter-spacing:.2px;
+    pointer-events:none;transform:translate(6px,-6px);}
+  .city-label.tier1{font-size:10.5px;font-weight:600;color:#e6edf3;}
+
   #detailCol{width:520px;background:var(--panel);border-left:1px solid var(--line);
     display:flex;flex-direction:column;overflow-y:auto; z-index: 100;}
   .detail-head{padding:20px 20px 16px;border-bottom:1px solid var(--grid);background:var(--bg); display:flex; justify-content:space-between; align-items:flex-start;}
@@ -174,6 +218,9 @@
   .cycle-selector { padding: 12px 20px; background: var(--bg); border-bottom: 1px solid var(--line); }
   .cycle-selector select { width: 100%; background: #0d131c; color: var(--ink); border: 1px solid var(--dimmer); padding: 8px 12px; border-radius: 6px; font-family: var(--mono); font-size: 12px; outline: none; appearance: none; cursor:pointer;}
   .cycle-selector select:focus { border-color: var(--atl); }
+  .storm-selector { background: rgba(255,176,63,.07); border-bottom: 1px solid rgba(255,176,63,.3); }
+  .storm-selector select { border-color: rgba(255,176,63,.4); }
+  .storm-selector select:focus { border-color: var(--gold); }
 
   .metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);margin:0}
   .metric{background:var(--panel);padding:14px 18px}
@@ -211,6 +258,7 @@
 <header>
   <div class="brand" onclick="resetToUpload()" title="Return to home"><b>GENESIS</b>·DESK</div>
   <div class="tagline">ATCF File Reader · Runs Entirely In Your Browser</div>
+  <button class="guide-btn" style="margin-left:20px;" onclick="openGuide()">📖 User Guide</button>
   <div class="clock">
     <b id="cycleLabel">—</b>
   </div>
@@ -218,7 +266,10 @@
 
 <div id="uploadScreen">
   <div class="upload-card">
-    <h1>Load an ATCF a-deck</h1>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+      <h1 style="margin-bottom:0;">Load an ATCF a-deck</h1>
+      <button class="guide-btn" onclick="openGuide()">📖 User Guide</button>
+    </div>
     <p class="lede">Drop one or both ATCF a-deck sources below — the standard NHC/RAL a-deck, a Google WeatherLab a-deck, or both — to analyze ensemble spread and guidance models.</p>
 
     <div class="source-grid">
@@ -266,6 +317,7 @@
           <button class="tbtn" id="toggleIntBtn">Intensity Models</button>
           <button class="tbtn" id="toggleGoogleBtn" title="Google WeatherLab ensemble">Google Ensemble</button>
           <button class="tbtn" id="toggleHeatmapBtn">MSLP Heatmap</button>
+          <button class="tbtn on" id="toggleCitiesBtn" title="Show reference cities on the map">Cities</button>
 
           <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-left:16px">WIND UNITS</span>
           <div class="tbtn-group unit-toggle">
@@ -309,6 +361,72 @@
 </div>
 <div id="chartTooltip"></div>
 
+<div id="guideOverlay" onclick="if(event.target===this) closeGuide()">
+  <div class="guide-modal">
+    <div class="guide-head">
+      <h2>📖 GENESIS·DESK — USER GUIDE</h2>
+      <button class="guide-close" onclick="closeGuide()">✕ Close</button>
+    </div>
+    <div class="guide-body">
+
+      <h3>1 · Getting Data In</h3>
+      <p>This tool reads ATCF a-deck files — plain-text tropical cyclone forecast data. There are two independent upload slots on the home screen, and you can fill in either one or both at once:</p>
+
+      <p style="margin-top:16px;"><b style="color:var(--ink);">Source 1 — Standard ATCF (RAL / NHC)</b></p>
+      <ul>
+        <li>Go to <code>hurricanes.ral.ucar.edu/realtime/current</code> and click on the storm you want.</li>
+        <li>Scroll to the bottom of that storm's page to the list of ATCF links.</li>
+        <li>The a-deck file is always the <b>first link</b> in that ATCF link list — click it to download.</li>
+        <li>Upload that file into <b>Source 1</b> on the home screen.</li>
+      </ul>
+
+      <p style="margin-top:16px;"><b style="color:var(--ink);">Source 2 — Google WeatherLab</b></p>
+      <ul>
+        <li>Go to <code>deepmind.google.com/science/weatherlab</code> and hit the <b>Download Data</b> button in the top right corner, next to the settings gear icon.</li>
+        <li>Select <b>our experimental model</b>, then <b>Ensemble</b>, then <b>ATCF</b>.</li>
+        <li>This is also where you pick which run to use — choose the most recent DeepMind run available.</li>
+        <li>Hit the <b>download link</b> to get the file, then upload it into <b>Source 2</b> on the home screen.</li>
+      </ul>
+
+      <p>Both accept <code>.dat</code>, <code>.dat.gz</code> (gzip is decompressed automatically), or plain <code>.txt</code>. Once at least one file is chosen, the <b>Load Data</b> button lights up — click it to parse and open the storm view.</p>
+      <div class="guide-note">If you upload both sources for the same storm, everything from each stays independently selectable — nothing gets blended together.</div>
+
+      <h3>2 · If Your File Has Multiple Storms</h3>
+      <p>Some ensemble runs cover more than one active storm at once. If the app detects this, an orange <b>"⚠ N storms detected in this file"</b> dropdown appears at the top of the side panel. Pick a storm and the map automatically recenters and every chart/metric updates for that storm. It defaults to whichever storm has the most data in the file.</p>
+
+      <h3>3 · The Map Toolbar</h3>
+      <p>Two rows sit above the map:</p>
+      <ul>
+        <li><span class="gk">DATA</span> row — toggle which track groups are drawn: <b>Ensembles</b>, <b>Track Models</b>, <b>Intensity Models</b>, and <b>Google Ensemble</b>. Any group with no data in your file(s) greys out automatically. <b>MSLP Heatmap</b> paints a soft pressure-based overlay from whichever ensemble source(s) are on. <b>Cities</b> toggles reference city labels (more appear as you zoom in). <b>Wind Units</b> (KT/MPH) affects the whole app at once. <b>Color Map Tracks By</b> switches track lines between a flat per-source color, or a Wind Speed / Pressure gradient — this control greys out while the heatmap is active, since the two overlap.</li>
+        <li><span class="gk">ANALYSIS</span> row — scoped to whichever tab is selected in the side panel (Ensembles / Intensity Models / Google). <b>Uncertainty Cone</b> shades the spread of that group's tracks out to +84h. <b>Strike Probability</b> shows a grid of what % of members pass through each map cell. The <b>Play</b> control (▶, scrubber, time readout, ✕ reset) animates the forecast forward in time — drag the scrubber and the map updates live while the side panel syncs once you let go, so it stays smooth even on long forecasts.</li>
+      </ul>
+
+      <h3>4 · Clicking the Map</h3>
+      <p>Click anywhere on the map to drop a pink target marker with a dashed radius circle. This feeds the <b>Closest Approach</b> calculator in the side panel — no need to type coordinates unless you want precision, though that option's there too.</p>
+
+      <h3>5 · The Side Panel</h3>
+      <ul>
+        <li><b>Cycle selector</b> — switch between forecast runs/cycles present in the file.</li>
+        <li><b>Ensembles / Intensity Models / Google tabs</b> — choose which model group every metric, chart, and analysis tool below is based on. Greys out if that source isn't in your data.</li>
+        <li><b>Metrics</b> — current wind/pressure, and the mean peak wind / mean minimum pressure across the selected group.</li>
+        <li><b>Rapid Intensification flag</b> — warns if any member shows a ≥30kt wind jump within a 24h window, with the earliest onset time and which members triggered it.</li>
+        <li><b>Model Agreement</b> — an overall 0–100 score plus a line chart showing how tightly clustered the guidance is across the whole forecast (useful for spotting "confident early, diverging later" patterns). Hover the line for exact numbers; <b>NEW TAB</b> pops out a larger standalone version.</li>
+        <li><b>Closest Approach</b> — after clicking the map (or entering coordinates), shows what % of members pass within your chosen radius (in miles) and the earliest / median arrival time.</li>
+        <li><b>Probability Distribution</b> — % of members reaching TD / TS / Cat 1–5 wind thresholds.</li>
+        <li><b>Wind &amp; Pressure charts</b> — full spaghetti of every member over time, with real UTC time on the x-axis. Hover any line for a tooltip; <b>NEW TAB</b> opens a bigger, fully live version with its own KT/MPH toggle.</li>
+      </ul>
+
+      <h3>6 · Good to Know</h3>
+      <ul>
+        <li>Click the <b>GENESIS·DESK</b> logo (or the <b>↺ New File</b> button in the side panel) anytime to return to the upload screen.</li>
+        <li>Everything runs entirely in your browser — files are never uploaded to a server.</li>
+        <li>This guide is always one click away via the <b>📖 User Guide</b> button, both here and inside the main view.</li>
+      </ul>
+
+    </div>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    PARSER & METEOROLOGICAL CATEGORIES
@@ -350,19 +468,31 @@ function parseLatLon(raw){
 }
 
 function parseATCFCore(rawText, ensembleTest){
-  const trackByCycle={}, intByCycle={}, ensByCycle={}, allCycles=new Set();
-  let basin='', cy='', stormName='';
-  
+  // A single a-deck file can contain more than one active storm (e.g. an
+  // ensemble run covering two simultaneous systems). Group everything by
+  // basin+cy ("stormKey") first, so each storm's tracks stay separate.
+  const storms = {};
+
+  function getStorm(basin, cy){
+    const key = basin + cy;
+    if(!storms[key]){
+      storms[key] = { basin, cy, stormName:'', trackByCycle:{}, intByCycle:{}, ensByCycle:{} };
+    }
+    return storms[key];
+  }
+
   rawText.split(/\r?\n/).forEach(raw=>{
     const line = raw.trim();
     if(!line || line.startsWith('#')) return;
     try{
       const parts = line.split(',').map(s=>s.trim());
       if(parts.length < 10) return;
-      if(!basin){ basin=parts[0].toUpperCase(); cy=parts[1]; }
+      const basin = parts[0].toUpperCase();
+      const cy = parts[1];
+      const storm = getStorm(basin, cy);
+
       const cycle = parts[2];
       const tech = parts[4].toUpperCase();
-      allCycles.add(cycle);
       let tau = parseInt(parseFloat(parts[5]),10); if(isNaN(tau)) tau=0;
       const lat = parseLatLon(parts[6]), lon = parseLatLon(parts[7]);
       if(lat===null||lon===null) return;
@@ -373,9 +503,9 @@ function parseATCFCore(rawText, ensembleTest){
         const cand = parts[27].toUpperCase();
         if(cand && /^[A-Z0-9\- ]{2,}$/.test(cand) && cand !== 'GENERIC'){
           const isTemp = cand.includes('INVEST') || cand.includes('PTC') || cand.includes('TD');
-          const hasRealName = stormName && !stormName.includes('INVEST') && !stormName.includes('PTC') && !stormName.includes('TD');
+          const hasRealName = storm.stormName && !storm.stormName.includes('INVEST') && !storm.stormName.includes('PTC') && !storm.stormName.includes('TD');
           if (!(hasRealName && isTemp)) {
-            stormName = cand;
+            storm.stormName = cand;
           }
         }
       }
@@ -387,9 +517,9 @@ function parseATCFCore(rawText, ensembleTest){
       if(!isTrack && !isIntense && !isEns) return;
       
       let bucket;
-      if(isEns) bucket = ensByCycle;
-      else if(isIntense) bucket = intByCycle;
-      else bucket = trackByCycle;
+      if(isEns) bucket = storm.ensByCycle;
+      else if(isIntense) bucket = storm.intByCycle;
+      else bucket = storm.trackByCycle;
 
       bucket[cycle] = bucket[cycle] || {};
       if(!bucket[cycle][tech]){
@@ -411,34 +541,6 @@ function parseATCFCore(rawText, ensembleTest){
     }catch(e){}
   });
 
-  for(let cyc in ensByCycle){
-     let tauMap = {};
-     Object.values(ensByCycle[cyc]).forEach(tr => {
-        tr.pts.forEach(p => {
-           let tau = p[3];
-           if(!tauMap[tau]) tauMap[tau] = { w:0, p:0, pc:0, lon:0, lat:0, c:0 };
-           tauMap[tau].w += p[2];
-           if(p[4] && p[4]!==1013){ 
-             tauMap[tau].p += p[4]; 
-             tauMap[tau].pc++; 
-           }
-           tauMap[tau].lon += p[0];
-           tauMap[tau].lat += p[1];
-           tauMap[tau].c++;
-        });
-     });
-     
-     let meanPts = Object.keys(tauMap).map(Number).sort((a,b)=>a-b).map(tau => {
-        let dat = tauMap[tau];
-        let avgP = dat.pc > 0 ? Math.round(dat.p/dat.pc) : 1013;
-        return [dat.lon/dat.c, dat.lat/dat.c, Math.round(dat.w/dat.c), tau, avgP];
-     });
-     
-     if(meanPts.length > 1){
-       ensByCycle[cyc]["MEAN"] = { model:"MEAN", member:"ENS MEAN", cycle:cyc, pts:meanPts };
-     }
-  }
-
   function cleanBucket(bucket) {
     const cleaned = {};
     for (const cyc in bucket) {
@@ -451,22 +553,61 @@ function parseATCFCore(rawText, ensembleTest){
     }
     return cleaned;
   }
-  
-  const trackClean = cleanBucket(trackByCycle);
-  const intClean = cleanBucket(intByCycle);
-  const ensClean = cleanBucket(ensByCycle);
-  
-  const allValidCycles = [...new Set([
-    ...Object.keys(trackClean), ...Object.keys(intClean), ...Object.keys(ensClean)
-  ])].sort().reverse();
 
-  return {
-    basin, cy, stormName: stormName || `TC ${cy}${basin}`,
-    cycles: allValidCycles,
-    trackModels: { byCycle: trackClean },
-    intensityModels: { byCycle: intClean },
-    ensembles: { byCycle: ensClean },
-  };
+  const result = {};
+  for(const stormKey in storms){
+    const storm = storms[stormKey];
+
+    // ensemble mean synthesis, scoped to this storm only
+    for(let cyc in storm.ensByCycle){
+       let tauMap = {};
+       Object.values(storm.ensByCycle[cyc]).forEach(tr => {
+          tr.pts.forEach(p => {
+             let tau = p[3];
+             if(!tauMap[tau]) tauMap[tau] = { w:0, p:0, pc:0, lon:0, lat:0, c:0 };
+             tauMap[tau].w += p[2];
+             if(p[4] && p[4]!==1013){ 
+               tauMap[tau].p += p[4]; 
+               tauMap[tau].pc++; 
+             }
+             tauMap[tau].lon += p[0];
+             tauMap[tau].lat += p[1];
+             tauMap[tau].c++;
+          });
+       });
+       
+       let meanPts = Object.keys(tauMap).map(Number).sort((a,b)=>a-b).map(tau => {
+          let dat = tauMap[tau];
+          let avgP = dat.pc > 0 ? Math.round(dat.p/dat.pc) : 1013;
+          return [dat.lon/dat.c, dat.lat/dat.c, Math.round(dat.w/dat.c), tau, avgP];
+       });
+       
+       if(meanPts.length > 1){
+         storm.ensByCycle[cyc]["MEAN"] = { model:"MEAN", member:"ENS MEAN", cycle:cyc, pts:meanPts };
+       }
+    }
+
+    const trackClean = cleanBucket(storm.trackByCycle);
+    const intClean = cleanBucket(storm.intByCycle);
+    const ensClean = cleanBucket(storm.ensByCycle);
+
+    const allValidCycles = [...new Set([
+      ...Object.keys(trackClean), ...Object.keys(intClean), ...Object.keys(ensClean)
+    ])].sort().reverse();
+
+    if(allValidCycles.length === 0) continue;
+
+    result[stormKey] = {
+      basin: storm.basin, cy: storm.cy,
+      stormName: storm.stormName || `TC ${storm.cy}${storm.basin}`,
+      cycles: allValidCycles,
+      trackModels: { byCycle: trackClean },
+      intensityModels: { byCycle: intClean },
+      ensembles: { byCycle: ensClean },
+    };
+  }
+
+  return { storms: result, stormKeys: Object.keys(result).sort() };
 }
 
 function parseATCF(rawText){
@@ -478,32 +619,47 @@ function parseGoogleATCF(rawText){
 }
 
 function emptyBucket(){ return { byCycle: {} }; }
+function emptyStorm(basin, cy){
+  return {
+    basin, cy, stormName: `TC ${cy}${basin}`, cycles: [],
+    trackModels: emptyBucket(), intensityModels: emptyBucket(), ensembles: emptyBucket(), googleEnsembles: emptyBucket()
+  };
+}
 
 /* Combines an optional RAL/NHC-style a-deck parse and an optional Google
-   WeatherLab a-deck parse into one unified data set. Either source may be
-   absent; the app treats "google ensembles" as a distinct, independently
+   WeatherLab a-deck parse into one unified, multi-storm data set. Either
+   source may be absent. Storms are matched across sources by basin+cy; a
+   file (either source) may contain more than one active storm at once, so
+   each ends up as its own independently-selectable entry rather than being
+   blended together. "Google ensembles" is a distinct, independently
    toggleable category alongside the RAL-derived ensembles/track/intensity
    buckets, rather than merging member lists together. */
 function mergeParsedSources(ralParsed, googleParsed){
-  const basin = (ralParsed && ralParsed.basin) || (googleParsed && googleParsed.basin) || '';
-  const cy = (ralParsed && ralParsed.cy) || (googleParsed && googleParsed.cy) || '';
-  const stormName = (ralParsed && ralParsed.stormName && !ralParsed.stormName.startsWith('TC '))
-    ? ralParsed.stormName
-    : ((googleParsed && googleParsed.stormName && !googleParsed.stormName.startsWith('TC ')) ? googleParsed.stormName
-      : ((ralParsed && ralParsed.stormName) || (googleParsed && googleParsed.stormName) || `TC ${cy}${basin}`));
+  const ralStorms = ralParsed ? ralParsed.storms : {};
+  const googleStorms = googleParsed ? googleParsed.storms : {};
+  const allKeys = [...new Set([...Object.keys(ralStorms), ...Object.keys(googleStorms)])].sort();
 
-  const cycles = [...new Set([
-    ...(ralParsed ? ralParsed.cycles : []),
-    ...(googleParsed ? googleParsed.cycles : [])
-  ])].sort().reverse();
+  const storms = {};
+  allKeys.forEach(key => {
+    const r = ralStorms[key], g = googleStorms[key];
+    const basin = (r && r.basin) || (g && g.basin) || key.slice(0,2);
+    const cy = (r && r.cy) || (g && g.cy) || key.slice(2);
+    const stormName = (r && r.stormName && !r.stormName.startsWith('TC '))
+      ? r.stormName
+      : ((g && g.stormName && !g.stormName.startsWith('TC ')) ? g.stormName
+        : ((r && r.stormName) || (g && g.stormName) || `TC ${cy}${basin}`));
+    const cycles = [...new Set([...(r ? r.cycles : []), ...(g ? g.cycles : [])])].sort().reverse();
 
-  return {
-    basin, cy, stormName, cycles,
-    trackModels: ralParsed ? ralParsed.trackModels : emptyBucket(),
-    intensityModels: ralParsed ? ralParsed.intensityModels : emptyBucket(),
-    ensembles: ralParsed ? ralParsed.ensembles : emptyBucket(),
-    googleEnsembles: googleParsed ? googleParsed.ensembles : emptyBucket()
-  };
+    storms[key] = {
+      basin, cy, stormName, cycles,
+      trackModels: r ? r.trackModels : emptyBucket(),
+      intensityModels: r ? r.intensityModels : emptyBucket(),
+      ensembles: r ? r.ensembles : emptyBucket(),
+      googleEnsembles: g ? g.ensembles : emptyBucket()
+    };
+  });
+
+  return { storms, stormKeys: allKeys };
 }
 
 function hasBucketData(bucket){
@@ -574,42 +730,73 @@ function haversineKm(lat1, lon1, lat2, lon2){
 }
 
 /* Model agreement score: how tightly clustered the members/models are on
-   track position and wind, averaged across all forecast hours. Higher = more agreement. */
-function computeAgreement(tracks){
+   track position and wind. Computed per-forecast-hour, then bucketed into
+   windows (default 24h) so agreement can be seen to shift over the forecast
+   (e.g. tight in the first 48h, diverging in the extended range), plus a
+   single overall summary score (the average of all per-hour scores). */
+function labelForAgreementScore(score){
+  if(score >= 75) return { label: 'HIGH AGREEMENT', color: '#5eead4' };
+  if(score >= 45) return { label: 'MODERATE AGREEMENT', color: '#ffd93d' };
+  return { label: 'LOW AGREEMENT', color: '#ff4757' };
+}
+
+function computeAgreementTimeline(tracks, bucketHours){
+  bucketHours = bucketHours || 24;
   const validTracks = tracks.filter(t => t.member !== 'ENS MEAN');
   if(validTracks.length < 2) return null;
 
   const allTaus = [...new Set(validTracks.flatMap(t => t.pts.map(p => p[3])))].sort((a,b)=>a-b);
-  let trackSpreadSum = 0, trackSpreadN = 0, windSpreadSum = 0, windSpreadN = 0;
 
-  allTaus.forEach(tau => {
+  const perTau = allTaus.map(tau => {
     const pts = validTracks.map(t => t.pts.find(p => p[3] === tau)).filter(Boolean);
-    if(pts.length < 2) return;
+    if(pts.length < 2) return null;
 
     const meanLon = pts.reduce((s,p)=>s+p[0],0) / pts.length;
     const meanLat = pts.reduce((s,p)=>s+p[1],0) / pts.length;
-    const avgDist = pts.reduce((s,p)=> s + haversineKm(meanLat, meanLon, p[1], p[0]), 0) / pts.length;
-    trackSpreadSum += avgDist; trackSpreadN++;
+    const trackSpreadKm = pts.reduce((s,p)=> s + haversineKm(meanLat, meanLon, p[1], p[0]), 0) / pts.length;
 
     const winds = pts.map(p=>p[2]);
     const meanWind = winds.reduce((a,b)=>a+b,0) / winds.length;
-    const windStd = Math.sqrt(winds.reduce((s,w)=> s+(w-meanWind)**2, 0) / winds.length);
-    windSpreadSum += windStd; windSpreadN++;
+    const windSpreadKt = Math.sqrt(winds.reduce((s,w)=> s+(w-meanWind)**2, 0) / winds.length);
+
+    // Normalize: ~0km/0kt spread => 100, ~400km / ~40kt spread => 0
+    const trackScore = clamp(100 - (trackSpreadKm/400)*100, 0, 100);
+    const windScore = clamp(100 - (windSpreadKt/40)*100, 0, 100);
+    const score = trackScore*0.6 + windScore*0.4;
+
+    return { tau, score, trackSpreadKm, windSpreadKt };
+  }).filter(Boolean);
+
+  if(!perTau.length) return null;
+  const maxTau = Math.max(...perTau.map(p=>p.tau));
+
+  const bucketMap = {};
+  perTau.forEach(p => {
+    const idx = Math.floor(p.tau / bucketHours);
+    (bucketMap[idx] = bucketMap[idx] || []).push(p);
+  });
+  const buckets = Object.keys(bucketMap).map(Number).sort((a,b)=>a-b).map(idx => {
+    const inBucket = bucketMap[idx];
+    const start = idx * bucketHours, end = start + bucketHours;
+    const score = Math.round(inBucket.reduce((s,p)=>s+p.score,0) / inBucket.length);
+    const avgTrackSpreadKm = Math.round(inBucket.reduce((s,p)=>s+p.trackSpreadKm,0) / inBucket.length);
+    const avgWindSpreadKt = Math.round(inBucket.reduce((s,p)=>s+p.windSpreadKt,0) / inBucket.length);
+    return {
+      startTau: start, endTau: Math.min(end, maxTau), score, avgTrackSpreadKm, avgWindSpreadKt,
+      ...labelForAgreementScore(score)
+    };
   });
 
-  const avgTrackSpreadKm = trackSpreadN ? trackSpreadSum/trackSpreadN : 0;
-  const avgWindSpreadKt = windSpreadN ? windSpreadSum/windSpreadN : 0;
+  const overallScoreRaw = Math.round(perTau.reduce((s,p)=>s+p.score,0) / perTau.length);
+  const overall = {
+    score: overallScoreRaw,
+    avgTrackSpreadKm: Math.round(perTau.reduce((s,p)=>s+p.trackSpreadKm,0) / perTau.length),
+    avgWindSpreadKt: Math.round(perTau.reduce((s,p)=>s+p.windSpreadKt,0) / perTau.length),
+    n: validTracks.length,
+    ...labelForAgreementScore(overallScoreRaw)
+  };
 
-  // Normalize: ~0km/0kt spread => 100, ~400km / ~40kt spread => 0
-  const trackScore = clamp(100 - (avgTrackSpreadKm/400)*100, 0, 100);
-  const windScore = clamp(100 - (avgWindSpreadKt/40)*100, 0, 100);
-  const score = Math.round(trackScore*0.6 + windScore*0.4);
-
-  let label = 'LOW AGREEMENT', color = '#ff4757';
-  if(score >= 75){ label = 'HIGH AGREEMENT'; color = '#5eead4'; }
-  else if(score >= 45){ label = 'MODERATE AGREEMENT'; color = '#ffd93d'; }
-
-  return { score, label, color, avgTrackSpreadKm: Math.round(avgTrackSpreadKm), avgWindSpreadKt: Math.round(avgWindSpreadKt), n: validTracks.length };
+  return { overall, buckets };
 }
 
 /* Ensemble/intensity-model uncertainty cone: interpolated center + radius
@@ -697,6 +884,7 @@ function computeDensityGrid(tracks, cellDeg){
   return { cells, total };
 }
 const DENSITY_STOPS = [[0,'#1e3a5f'],[0.2,'#3fb6ff'],[0.4,'#5eead4'],[0.6,'#ffd93d'],[0.8,'#ff9f43'],[1,'#ff4757']];
+const AGREEMENT_STOPS = [[0,'#ff4757'],[45,'#ffd93d'],[75,'#5eead4'],[100,'#5eead4']];
 
 /* Rapid intensification flag: NHC's standard threshold is a ≥30kt increase
    in sustained wind within any 24h window. Flags which members/models hit it
@@ -785,15 +973,25 @@ function computeClosestApproach(tracks, point, radiusMi){
    ============================================================ */
 const S = {
   parsed: null, fix: null,
-  activeCycle: null,
+  activeStorm: null, activeCycle: null,
   showEnsembles: true, showTrackModels: false, showIntensityModels: false, showHeatmap: false,
   showGoogleEnsembles: false,
+  showCities: true,
   showCone: false, showDensity: false,
   playTau: null, playing: false,
   closestPoint: null, closestRadiusMi: 60,
   colorBy: 'model', detailTab: 'ensemble', windUnit: 'kt'
 };
 let playTimer = null;
+
+/* S.parsed is now { storms: {stormKey: {...}}, stormKeys: [...] } to support
+   files that contain more than one active storm at once (e.g. a Google
+   WeatherLab ensemble run covering two simultaneous systems). Everything
+   that used to read directly off S.parsed reads off the currently
+   selected storm instead. */
+function activeStormObj(){
+  return (S.parsed && S.activeStorm) ? S.parsed.storms[S.activeStorm] : null;
+}
 
 /* ---- wind unit helpers ---- */
 const KT_TO_MPH = 1.15078;
@@ -831,6 +1029,15 @@ window.showTT = function(e, member, maxV, minP, unit){
 window.hideTT = function(){
   const tt = document.getElementById('chartTooltip');
   if(tt) tt.style.opacity = 0;
+};
+window.showAgreementTT = function(e, label, score, trackKm, windKt){
+  const tt = document.getElementById('chartTooltip');
+  if(!tt) return;
+  const info = labelForAgreementScore(score);
+  tt.innerHTML = '<strong style="color:'+info.color+';font-family:var(--mono);font-size:16px;">' + score + '/100</strong><br>' + label + '<br><span style="color:'+info.color+'">' + info.label + '</span><br>±' + trackKm + ' km track · ±' + windDisp(windKt, S.windUnit) + ' ' + windSuffix(S.windUnit) + ' wind';
+  tt.style.left = (e.clientX + 15) + 'px';
+  tt.style.top = (e.clientY + 15) + 'px';
+  tt.style.opacity = 1;
 };
 
 function hexToRgb(hex) {
@@ -882,11 +1089,133 @@ function formatCycle(cyc){
 }
 
 /* ============================================================
+   REFERENCE CITIES
+   Curated world cities for geographic orientation, weighted toward
+   tropical-cyclone-prone coastlines. tier 1 = always visible (major
+   world/regional capitals), tier 2 = visible once zoomed to
+   regional/country level, tier 3 = visible once zoomed in further.
+   Format: [name, lat, lon, tier]
+   ============================================================ */
+const CITIES = [
+  // --- Tier 1: major world cities / capitals (always visible) ---
+  ["New York",40.71,-74.01,1],["Miami",25.76,-80.19,1],["Houston",29.76,-95.37,1],
+  ["Washington DC",38.91,-77.04,1],["Havana",23.13,-82.38,1],["Mexico City",19.43,-99.13,1],
+  ["Panama City",8.98,-79.52,1],["Bogotá",4.71,-74.07,1],["Manila",14.60,120.98,1],
+  ["Tokyo",35.68,139.65,1],["Shanghai",31.23,121.47,1],["Hong Kong",22.32,114.17,1],
+  ["Taipei",25.03,121.57,1],["Beijing",39.90,116.41,1],["Seoul",37.57,126.98,1],
+  ["Mumbai",19.08,72.88,1],["Delhi",28.61,77.21,1],["Dhaka",23.81,90.41,1],
+  ["Jakarta",-6.21,106.85,1],["Sydney",-33.87,151.21,1],["London",51.51,-0.13,1],
+  ["Paris",48.86,2.35,1],["Moscow",55.76,37.62,1],["Cairo",30.04,31.24,1],
+  ["Lagos",6.52,3.38,1],["São Paulo",-23.55,-46.63,1],["Rio de Janeiro",-22.91,-43.17,1],
+  ["Buenos Aires",-34.60,-58.38,1],["Los Angeles",34.05,-118.24,1],["Honolulu",21.31,-157.86,1],
+
+  // --- Tier 2: large regional / notable coastal cities ---
+  // US Gulf & East Coast
+  ["Tampa",27.95,-82.46,2],["New Orleans",29.95,-90.07,2],["Corpus Christi",27.80,-97.40,2],
+  ["Mobile",30.69,-88.04,2],["Pensacola",30.42,-87.22,2],["Charleston",32.78,-79.93,2],
+  ["Savannah",32.08,-81.10,2],["Jacksonville",30.33,-81.66,2],["Norfolk",36.85,-76.29,2],
+  ["Wilmington",34.22,-77.94,2],["Myrtle Beach",33.69,-78.89,2],["Key West",24.56,-81.78,2],
+  ["Galveston",29.30,-94.80,2],["Boston",42.36,-71.06,2],["Charlotte",35.23,-80.84,2],
+  // Caribbean & Mexico/Central America
+  ["Nassau",25.06,-77.35,2],["San Juan",18.47,-66.11,2],["Santo Domingo",18.49,-69.93,2],
+  ["Kingston",17.97,-76.79,2],["Port-au-Prince",18.59,-72.31,2],["Cancún",21.16,-86.85,2],
+  ["Veracruz",19.17,-96.13,2],["Mérida",20.97,-89.62,2],["Belize City",17.50,-88.19,2],
+  ["San Pedro Sula",15.50,-88.03,2],["Tegucigalpa",14.10,-87.22,2],["Managua",12.11,-86.24,2],
+  ["San José",9.93,-84.08,2],["Bridgetown",13.10,-59.62,2],["Fort-de-France",14.60,-61.07,2],
+  ["Willemstad",12.11,-68.93,2],["Acapulco",16.85,-99.88,2],["Puerto Vallarta",20.65,-105.22,2],
+  ["Mazatlán",23.25,-106.41,2],["Manzanillo",19.11,-104.34,2],
+  // South America (Caribbean/Atlantic-facing)
+  ["Caracas",10.49,-66.90,2],["Cartagena",10.39,-75.51,2],["Maracaibo",10.65,-71.65,2],
+  ["Georgetown",6.80,-58.16,2],["Paramaribo",5.87,-55.17,2],["Fortaleza",-3.72,-38.54,2],
+  ["Recife",-8.05,-34.88,2],["Salvador",-12.97,-38.51,2],
+  // East Asia / Western Pacific
+  ["Guangzhou",23.13,113.26,2],["Shenzhen",22.54,114.06,2],["Xiamen",24.48,118.09,2],
+  ["Fuzhou",26.08,119.30,2],["Ningbo",29.87,121.55,2],["Qingdao",36.07,120.38,2],
+  ["Kaohsiung",22.63,120.30,2],["Naha",26.21,127.68,2],["Osaka",34.69,135.50,2],
+  ["Nagoya",35.18,136.91,2],["Fukuoka",33.59,130.40,2],["Busan",35.18,129.08,2],
+  ["Da Nang",16.05,108.22,2],["Hanoi",21.03,105.85,2],["Ho Chi Minh City",10.82,106.63,2],
+  ["Bangkok",13.76,100.50,2],["Cebu City",10.32,123.90,2],["Davao",7.19,125.46,2],
+  ["Quezon City",14.68,121.04,2],["Guam (Hagåtña)",13.48,144.75,2],["Saipan",15.19,145.75,2],
+  ["Kolkata",22.57,88.36,2],["Chennai",13.08,80.27,2],["Visakhapatnam",17.69,83.22,2],
+  ["Yangon",16.87,96.20,2],["Chittagong",22.36,91.83,2],
+  // Australia / South Pacific
+  ["Brisbane",-27.47,153.03,2],["Cairns",-16.92,145.77,2],["Darwin",-12.46,130.84,2],
+  ["Port Moresby",-9.48,147.15,2],["Suva",-18.14,178.44,2],["Nouméa",-22.28,166.46,2],
+  // Africa / Indian Ocean
+  ["Maputo",-25.97,32.57,2],["Beira",-19.84,34.84,2],["Antananarivo",-18.88,47.51,2],
+  ["Durban",-29.86,31.02,2],["Dar es Salaam",-6.79,39.28,2],
+
+  // --- Tier 3: smaller but relevant coastal towns / islands ---
+  ["Biloxi",30.40,-88.89,3],["Panama City Beach",30.18,-85.81,3],["Cape Canaveral",28.39,-80.60,3],
+  ["Ocean City",38.34,-75.09,3],["Outer Banks",35.58,-75.47,3],["Grand Cayman",19.29,-81.37,3],
+  ["St. Thomas",18.34,-64.93,3],["St. Martin",18.07,-63.05,3],["Basseterre",17.30,-62.72,3],
+  ["Roseau",15.30,-61.39,3],["Castries",14.01,-60.99,3],["St. George's",12.06,-61.75,3],
+  ["Port of Spain",10.65,-61.52,3],["Cozumel",20.51,-86.95,3],["Progreso",21.28,-89.66,3],
+  ["Tulum",20.21,-87.47,3],["Huatulco",15.77,-96.13,3],["Zihuatanejo",17.64,-101.55,3],
+  ["Cabo San Lucas",22.89,-109.91,3],["La Paz",24.14,-110.31,3],["Guaymas",27.92,-110.90,3],
+  ["Puerto Barrios",15.73,-88.59,3],["Roatán",16.32,-86.53,3],["Bluefields",11.99,-83.76,3],
+  ["Puerto Limón",9.99,-83.03,3],["Colón",9.36,-79.90,3],["Barranquilla",11.00,-74.81,3],
+  ["Santa Marta",11.24,-74.20,3],["Wenzhou",27.99,120.70,3],["Zhoushan",30.02,122.21,3],
+  ["Shantou",23.35,116.68,3],["Beihai",21.48,109.12,3],["Zhanjiang",21.27,110.36,3],
+  ["Hue",16.46,107.59,3],["Quy Nhon",13.78,109.22,3],["Nha Trang",12.24,109.19,3],
+  ["Vung Tau",10.35,107.08,3],["Cần Thơ",10.03,105.79,3],["Iloilo City",10.72,122.56,3],
+  ["Tacloban",11.24,125.00,3],["Legazpi",13.14,123.74,3],["Zamboanga",6.91,122.08,3],
+  ["Puerto Princesa",9.74,118.74,3],["Baguio",16.41,120.60,3],["Vigan",17.57,120.39,3],
+  ["Kagoshima",31.60,130.56,3],["Miyazaki",31.91,131.42,3],["Kumamoto",32.80,130.71,3],
+  ["Wakayama",34.23,135.17,3],["Shizuoka",34.98,138.38,3],["Sendai",38.27,140.87,3],
+  ["Jeju City",33.50,126.53,3],["Mokpo",34.81,126.39,3],["Yeosu",34.76,127.66,3],
+  ["Chattogram Port",22.31,91.80,3],["Sittwe",20.15,92.90,3],["Cox's Bazar",21.44,91.98,3],
+  ["Puri",19.80,85.83,3],["Paradip",20.32,86.61,3],["Machilipatnam",16.19,81.14,3],
+  ["Puducherry",11.94,79.83,3],["Trincomalee",8.57,81.23,3],["Galle",6.03,80.22,3],
+  ["Toamasina",-18.15,49.40,3],["Nacala",-14.54,40.67,3],["Pemba",-12.97,40.52,3],
+  ["Inhambane",-23.86,35.38,3],["Townsville",-19.26,146.82,3],["Mackay",-21.14,149.19,3],
+  ["Rockhampton",-23.38,150.51,3],["Gladstone",-23.84,151.26,3],["Bundaberg",-24.87,152.35,3],
+  ["Port Vila",-17.73,168.32,3],["Apia",-13.83,-171.76,3],["Nukuʻalofa",-21.14,-175.20,3],
+  ["Guadalupe (Isla)",29.05,-118.28,3],["Puerto Escondido",15.87,-97.07,3],
+];
+
+// zoom thresholds at which each tier's dots/labels become visible
+const CITY_TIER_ZOOM = { 1: 0, 2: 4, 3: 6 };
+const CITY_LABEL_TIER_ZOOM = { 1: 0, 2: 5, 3: 7 };
+
+function renderCitiesLayer(){
+  if(!citiesLayerGroup) return;
+  citiesLayerGroup.clearLayers();
+  if(!S.showCities || !leafletMap) return;
+
+  const zoom = leafletMap.getZoom();
+  CITIES.forEach(([name, lat, lon, tier]) => {
+    if(zoom < CITY_TIER_ZOOM[tier]) return;
+    const tierClass = tier === 1 ? ' tier1' : '';
+    L.marker([lat, lon], {
+      icon: L.divIcon({
+        className: '',
+        html: `<div class="city-dot${tierClass}"></div>`,
+        iconSize: [5,5], iconAnchor: [2,2]
+      }),
+      interactive: false
+    }).addTo(citiesLayerGroup);
+
+    if(zoom >= CITY_LABEL_TIER_ZOOM[tier]){
+      L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: '',
+          html: `<div class="city-label${tierClass}">${name}</div>`,
+          iconSize: [0,0], iconAnchor: [0,0]
+        }),
+        interactive: false
+      }).addTo(citiesLayerGroup);
+    }
+  });
+}
+
+/* ============================================================
    LEAFLET MAP INTEGRATION
    ============================================================ */
 let leafletMap;
 let mapLayerGroup;
 let coneDensityGroup;
+let citiesLayerGroup;
 let coneDensityCacheKey = null;
 let coneDensityCacheTotal = 0;
 
@@ -900,12 +1229,15 @@ function initLeaflet() {
   
   mapLayerGroup = L.layerGroup().addTo(leafletMap);
   coneDensityGroup = L.layerGroup().addTo(leafletMap);
+  citiesLayerGroup = L.layerGroup().addTo(leafletMap);
 
   leafletMap.on('click', (e) => {
     S.closestPoint = { lat: e.latlng.lat, lon: e.latlng.lng };
     renderMap();
     renderDetail();
   });
+  leafletMap.on('zoomend', renderCitiesLayer);
+  renderCitiesLayer();
 }
 
 
@@ -1019,8 +1351,9 @@ function updateColorByAvailability(){
 }
 
 function updateSourceAvailability(){
-  const ral = hasRalData(S.parsed);
-  const google = hasGoogleData(S.parsed);
+  const storm = activeStormObj();
+  const ral = hasRalData(storm);
+  const google = hasGoogleData(storm);
   ['toggleEnsBtn','toggleTrackBtn','toggleIntBtn','toggleHeatmapBtn'].forEach(id=>{
     const btn = document.getElementById(id);
     if(!btn) return;
@@ -1062,13 +1395,14 @@ function renderMap() {
   updateColorByAvailability();
   updateSourceAvailability();
   
-  if(!S.parsed || !S.activeCycle){ syncPlayControl(null); document.getElementById('densityKey').style.display='none'; return; }
+  const storm = activeStormObj();
+  if(!storm || !S.activeCycle){ syncPlayControl(null); document.getElementById('densityKey').style.display='none'; return; }
 
   const cyc = S.activeCycle;
-  let ensTracks = S.parsed.ensembles.byCycle[cyc] || [];
-  let trackTracks = S.parsed.trackModels.byCycle[cyc] || [];
-  let intTracks = S.parsed.intensityModels.byCycle[cyc] || [];
-  let googleTracks = (S.parsed.googleEnsembles && S.parsed.googleEnsembles.byCycle[cyc]) || [];
+  let ensTracks = storm.ensembles.byCycle[cyc] || [];
+  let trackTracks = storm.trackModels.byCycle[cyc] || [];
+  let intTracks = storm.intensityModels.byCycle[cyc] || [];
+  let googleTracks = (storm.googleEnsembles && storm.googleEnsembles.byCycle[cyc]) || [];
 
   // Sync the play scrubber to whichever groups are currently shown on the map
   const shownGroups = [];
@@ -1108,14 +1442,14 @@ function renderMap() {
   // Cone + density are scoped to whichever detail tab is active (Ensembles / Intensity Models / Google).
   // Neither depends on playTau, so cache by (cycle, tab, toggle state) and skip the
   // expensive recompute + layer rebuild on every play-scrub frame.
-  const coneDensityKey = [cyc, S.detailTab, S.showCone, S.showDensity].join('|');
+  const coneDensityKey = [S.activeStorm, cyc, S.detailTab, S.showCone, S.showDensity].join('|');
   if(coneDensityKey !== coneDensityCacheKey){
     coneDensityCacheKey = coneDensityKey;
     coneDensityGroup.clearLayers();
 
-    const tabTracks = S.detailTab === 'ensemble' ? (S.parsed.ensembles.byCycle[cyc] || [])
-      : S.detailTab === 'google' ? ((S.parsed.googleEnsembles && S.parsed.googleEnsembles.byCycle[cyc]) || [])
-      : (S.parsed.intensityModels.byCycle[cyc] || []);
+    const tabTracks = S.detailTab === 'ensemble' ? (storm.ensembles.byCycle[cyc] || [])
+      : S.detailTab === 'google' ? ((storm.googleEnsembles && storm.googleEnsembles.byCycle[cyc]) || [])
+      : (storm.intensityModels.byCycle[cyc] || []);
     const tabColor = S.detailTab === 'ensemble' ? '#3fb6ff' : S.detailTab === 'google' ? '#34c98e' : '#ff9f43';
 
     if(S.showCone){
@@ -1313,11 +1647,13 @@ window.openChartInNewTab = function(btn) {
           }));
           maxTau = Math.ceil(maxTau/24)*24 || 24;
 
+          const numTicks = Math.floor(maxTau/24) + 1;
+          const labelStep = Math.max(1, Math.ceil(numTicks / 10));
           let xGrid='', xLabels='';
           for(let t=0;t<=maxTau;t+=24){
             const xPct=(t/maxTau)*100;
             if(t>0 && t<maxTau) xGrid += '<line x1="'+xPct+'" y1="0" x2="'+xPct+'" y2="100" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.5"/>';
-            xLabels += '<div style="position:absolute; bottom:-22px; left:'+xPct+'%; transform:translateX(-50%); font-size:10px; color:var(--dimmer); font-family:var(--mono); white-space:nowrap;">'+formatAxisTime(CHART.cyc, t)+'</div>';
+            if((t/24) % labelStep === 0 || t === maxTau) xLabels += '<div style="position:absolute; bottom:-22px; left:'+xPct+'%; transform:translateX(-50%); font-size:10px; color:var(--dimmer); font-family:var(--mono); white-space:nowrap;">'+formatAxisTime(CHART.cyc, t)+'</div>';
           }
 
           let svgContent='', yGuides='';
@@ -1355,11 +1691,13 @@ window.openChartInNewTab = function(btn) {
               return segs;
             }).join('');
           } else {
-            maxV = Math.ceil(maxV/10)*10+10;
-            const cat1Y = 100-(64/maxV)*100, tsY = 100-(34/maxV)*100;
-            yGuides = '<line x1="0" y1="'+cat1Y+'" x2="100" y2="'+cat1Y+'" stroke="#ffd93d" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>'
+            maxV = Math.max(Math.ceil(maxV/10)*10+10, 110);
+            const cat3Y = 100-(96/maxV)*100, cat1Y = 100-(64/maxV)*100, tsY = 100-(34/maxV)*100;
+            yGuides = '<line x1="0" y1="'+cat3Y+'" x2="100" y2="'+cat3Y+'" stroke="#ff4757" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>'
+              + '<line x1="0" y1="'+cat1Y+'" x2="100" y2="'+cat1Y+'" stroke="#ffd93d" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>'
               + '<line x1="0" y1="'+tsY+'" x2="100" y2="'+tsY+'" stroke="#5eead4" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>'
               + '<div class="axis-ytick" style="top:-6px;">'+windDisp(maxV)+'</div>'
+              + '<div class="axis-ytick" style="top:calc('+cat3Y+'% - 6px); color:#ff4757;">'+windDisp(96)+'</div>'
               + '<div class="axis-ytick" style="top:calc('+cat1Y+'% - 6px); color:#ffd93d;">'+windDisp(64)+'</div>'
               + '<div class="axis-ytick" style="top:calc('+tsY+'% - 6px); color:#5eead4;">'+windDisp(34)+'</div>'
               + '<div class="axis-ytick" style="bottom:-6px;">0</div>'
@@ -1435,11 +1773,13 @@ function buildChart(tracksList, mode, title, noDataMsg, cyc){
   }));
   maxTau = Math.ceil(maxTau/24)*24 || 24;
 
+  const numTicks = Math.floor(maxTau/24) + 1;
+  const labelStep = Math.max(1, Math.ceil(numTicks / 6)); // cap ~6 labels in the narrow side panel
   let xGrid='', xLabels='';
   for(let t=0;t<=maxTau;t+=24){
     const xPct=(t/maxTau)*100;
     if(t>0 && t<maxTau) xGrid += `<line x1="${xPct}" y1="0" x2="${xPct}" y2="100" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.5"/>`;
-    xLabels += `<div style="position:absolute; bottom:-20px; left:${xPct}%; transform:translateX(-50%); font-size:9px; color:var(--dimmer); font-family:var(--mono); white-space:nowrap;">${formatAxisTime(cyc, t)}</div>`;
+    if((t/24) % labelStep === 0 || t === maxTau) xLabels += `<div style="position:absolute; bottom:-20px; left:${xPct}%; transform:translateX(-50%); font-size:9px; color:var(--dimmer); font-family:var(--mono); white-space:nowrap;">${formatAxisTime(cyc, t)}</div>`;
   }
 
   let svgContent = '';
@@ -1487,13 +1827,15 @@ function buildChart(tracksList, mode, title, noDataMsg, cyc){
       return segs;
     }).join('');
   } else {
-    maxV = Math.ceil(maxV/10)*10+10;
-    const cat1Y = 100-(64/maxV)*100, tsY = 100-(34/maxV)*100;
+    maxV = Math.max(Math.ceil(maxV/10)*10+10, 110);
+    const cat3Y = 100-(96/maxV)*100, cat1Y = 100-(64/maxV)*100, tsY = 100-(34/maxV)*100;
 
     yGuides = `
+      <line x1="0" y1="${cat3Y}" x2="100" y2="${cat3Y}" stroke="#ff4757" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>
       <line x1="0" y1="${cat1Y}" x2="100" y2="${cat1Y}" stroke="#ffd93d" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>
       <line x1="0" y1="${tsY}" x2="100" y2="${tsY}" stroke="#5eead4" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>
       <div class="axis-ytick" style="top:-6px;">${windDisp(maxV,unit)}</div>
+      <div class="axis-ytick" style="top:calc(${cat3Y}% - 6px); color:#ff4757;">${windDisp(96,unit)}</div>
       <div class="axis-ytick" style="top:calc(${cat1Y}% - 6px); color:#ffd93d;">${windDisp(64,unit)}</div>
       <div class="axis-ytick" style="top:calc(${tsY}% - 6px); color:#5eead4;">${windDisp(34,unit)}</div>
       <div class="axis-ytick" style="bottom:-6px;">0</div>
@@ -1572,11 +1914,262 @@ function probRow(label, p, color){
   </div>`;
 }
 
+/* Model-agreement-over-time chart: same visual language as the wind/pressure
+   charts (real time x-axis, axis titles, New Tab popout) but plotting a
+   single 0-100 score line instead of member spaghetti. */
+function buildAgreementChart(agreement, cyc, title){
+  if(!agreement || !agreement.buckets || agreement.buckets.length < 2) return '';
+
+  const buckets = agreement.buckets;
+  const maxTau = Math.ceil(Math.max(...buckets.map(b=>b.endTau))/24)*24 || 24;
+
+  const numTicks = Math.floor(maxTau/24) + 1;
+  const labelStep = Math.max(1, Math.ceil(numTicks / 6)); // cap ~6 labels in the narrow side panel
+  let xGrid='', xLabels='';
+  for(let t=0;t<=maxTau;t+=24){
+    const xPct=(t/maxTau)*100;
+    if(t>0 && t<maxTau) xGrid += `<line x1="${xPct}" y1="0" x2="${xPct}" y2="100" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.5"/>`;
+    if((t/24) % labelStep === 0 || t === maxTau) xLabels += `<div style="position:absolute; bottom:-20px; left:${xPct}%; transform:translateX(-50%); font-size:9px; color:var(--dimmer); font-family:var(--mono); white-space:nowrap;">${formatAxisTime(cyc, t)}</div>`;
+  }
+
+  const highY = 100-75, modY = 100-45;
+  const yGuides = `
+    <line x1="0" y1="${highY}" x2="100" y2="${highY}" stroke="#5eead4" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>
+    <line x1="0" y1="${modY}" x2="100" y2="${modY}" stroke="#ffd93d" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>
+    <div class="axis-ytick" style="top:-6px;">100</div>
+    <div class="axis-ytick" style="top:calc(${highY}% - 6px); color:#5eead4;">75</div>
+    <div class="axis-ytick" style="top:calc(${modY}% - 6px); color:#ffd93d;">45</div>
+    <div class="axis-ytick" style="bottom:-6px;">0</div>
+    <div class="axis-title-y">AGREEMENT SCORE</div>
+  `;
+
+  const points = buckets.map(b => ({
+    tau: (b.startTau + b.endTau) / 2, score: b.score,
+    label: `${b.startTau}-${b.endTau}h`, trackKm: b.avgTrackSpreadKm, windKt: b.avgWindSpreadKt
+  }));
+
+  let svgContent = '';
+  for(let i=1; i<points.length; i++){
+    const p1 = points[i-1], p2 = points[i];
+    const x1 = (p1.tau/maxTau)*100, y1 = 100-p1.score;
+    const x2 = (p2.tau/maxTau)*100, y2 = 100-p2.score;
+    const col = interpColor((p1.score+p2.score)/2, AGREEMENT_STOPS);
+    svgContent += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="2.5" opacity="0.95" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`;
+  }
+  points.forEach(p => {
+    const x = (p.tau/maxTau)*100, y = 100-p.score;
+    const col = interpColor(p.score, AGREEMENT_STOPS);
+    svgContent += `<circle cx="${x}" cy="${y}" r="1.8" fill="${col}" stroke="#0a0e14" stroke-width="0.6" vector-effect="non-scaling-stroke" onmousemove="showAgreementTT(event, '${p.label}', ${p.score}, ${p.trackKm}, ${p.windKt})" onmouseout="hideTT()"><title>${p.label}: ${p.score}</title></circle>`;
+  });
+
+  const payload = { title, cyc, buckets, overall: agreement.overall };
+  const payloadJson = JSON.stringify(payload).replace(/</g, '\\u003c').replace(/'/g, '&#39;');
+
+  return `
+    <div class="chart-wrap" data-agreement-payload='${payloadJson}'>
+      <div class="sect-h" style="padding-right: 80px;">${title}</div>
+      <button class="fs-btn" onclick="openAgreementChartInNewTab(this)">NEW TAB ⧉</button>
+      <div style="display:flex; align-items:center; gap:8px; margin: -4px 20px 10px 32px; font-family:var(--mono); font-size:9px; color:var(--dimmer);">
+        <span>LOW AGREEMENT</span>
+        <div style="height:6px; width:120px; border-radius:3px; background:linear-gradient(to right, #ff4757, #ffd93d, #5eead4);"></div>
+        <span>HIGH AGREEMENT</span>
+      </div>
+      <div class="chart-inner" style="position:relative; height:130px; margin:10px 20px 40px 84px;">
+        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; top:0; left:0; overflow:visible;">
+          ${xGrid}
+          <line x1="0" y1="100" x2="100" y2="100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+          <line x1="0" y1="0" x2="0" y2="100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+          ${svgContent}
+        </svg>
+        ${yGuides}
+        ${xLabels}
+        <div class="axis-title-x">TIME (UTC)</div>
+      </div>
+    </div>`;
+}
+
+window.openAgreementChartInNewTab = function(btn) {
+  const wrap = btn.closest('.chart-wrap');
+  const raw = wrap.getAttribute('data-agreement-payload');
+  const data = JSON.parse(raw);
+
+  const newWin = window.open('', '_blank');
+  newWin.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${data.title}</title>
+      <style>
+        :root {
+          --bg:#0a0e14; --panel:#111721; --line:#1f2937;
+          --ink:#e6edf3; --dim:#7d8896; --dimmer:#4a5563;
+          --atl:#3fb6ff; --gold:#ffb03f;
+          --hot:#ff4757; --warm:#ff9f43; --mod:#ffd93d; --low:#5eead4; --none:#334155;
+          --mono:'SF Mono',ui-monospace,'Cascadia Code','Roboto Mono',Menlo,Consolas,monospace;
+          --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+        }
+        *{box-sizing:border-box;}
+        body {
+          background: var(--bg); color: var(--ink); font-family: var(--sans);
+          margin: 0; padding: 30px 50px; display: flex; flex-direction: column; min-height: 100vh;
+        }
+        .top-row{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom: 8px;}
+        .sect-h { font-family: var(--mono); font-size: 18px; letter-spacing: 1.5px; color: var(--dim); font-weight: 700; }
+        .overall-badge{font-family:var(--mono); font-size:13px; font-weight:700; padding:6px 14px; border-radius:6px; background:var(--panel); border:1px solid var(--line);}
+        .chart-container { flex: 1; position: relative; margin: 50px 60px 60px 108px; min-height: 320px; }
+        .axis-title-x{position:absolute;bottom:-38px;left:50%;transform:translateX(-50%);
+          font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:1.5px;white-space:nowrap;}
+        .axis-title-y{position:absolute;top:50%;left:-76px;transform:translateY(-50%) rotate(180deg);
+          writing-mode:vertical-rl;font-family:var(--mono);font-size:11px;color:var(--dim);
+          letter-spacing:1.5px;white-space:nowrap;}
+        .axis-ytick{position:absolute;width:38px;text-align:right;left:-48px;
+          font-size:10px;color:var(--dimmer);font-family:var(--mono);}
+
+        #chartTooltip { position: fixed; background: rgba(10,14,20,.95); border: 1px solid var(--line);
+          padding: 10px 14px; border-radius: 6px; font-family: var(--sans); font-size: 12px;
+          color: var(--dim); pointer-events: none; opacity: 0; transition: opacity 0.1s;
+          z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,0.6); backdrop-filter: blur(4px); line-height: 1.5; }
+      </style>
+    </head>
+    <body>
+      <div class="top-row">
+        <div class="sect-h">${data.title}</div>
+        <div class="overall-badge" style="color:${data.overall.color}">OVERALL: ${data.overall.score} — ${data.overall.label}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; margin: 4px 0 30px 8px; font-family:var(--mono); font-size:10px; color:var(--dimmer);">
+        <span>LOW AGREEMENT</span>
+        <div style="height:6px; width:140px; border-radius:3px; background:linear-gradient(to right, #ff4757, #ffd93d, #5eead4);"></div>
+        <span>HIGH AGREEMENT</span>
+      </div>
+      <div class="chart-container" id="chartContainer"></div>
+      <div id="chartTooltip"></div>
+
+      <script>
+        function hexToRgb(hex){ let c=hex.substring(1).split(''); if(c.length===3) c=[c[0],c[0],c[1],c[1],c[2],c[2]]; const h=parseInt(c.join(''),16); return [(h>>16)&255,(h>>8)&255,h&255]; }
+        function rgbToHex(r,g,b){ return "#" + (1<<24 | r<<16 | g<<8 | b).toString(16).slice(1); }
+        function interpColor(val, stops){
+          if (val <= stops[0][0]) return stops[0][1];
+          if (val >= stops[stops.length-1][0]) return stops[stops.length-1][1];
+          for (let i=0;i<stops.length-1;i++){
+            if (val >= stops[i][0] && val <= stops[i+1][0]){
+              const range = stops[i+1][0]-stops[i][0];
+              const factor = range===0 ? 0 : (val-stops[i][0])/range;
+              const rgb1=hexToRgb(stops[i][1]), rgb2=hexToRgb(stops[i+1][1]);
+              return rgbToHex(Math.round(rgb1[0]+factor*(rgb2[0]-rgb1[0])), Math.round(rgb1[1]+factor*(rgb2[1]-rgb1[1])), Math.round(rgb1[2]+factor*(rgb2[2]-rgb1[2])));
+            }
+          }
+          return stops[0][1];
+        }
+        const AGREEMENT_STOPS = ${JSON.stringify(AGREEMENT_STOPS)};
+        function cycleToDate(cyc){
+          if(!cyc || cyc.length<10) return null;
+          const y=+cyc.slice(0,4), mo=+cyc.slice(4,6)-1, d=+cyc.slice(6,8), h=+cyc.slice(8,10);
+          return new Date(Date.UTC(y,mo,d,h));
+        }
+        function formatAxisTime(cyc, tauHours){
+          const base = cycleToDate(cyc);
+          if(!base) return tauHours + 'h';
+          const dt = new Date(base.getTime() + tauHours*3600*1000);
+          const mm=String(dt.getUTCMonth()+1).padStart(2,'0'), dd=String(dt.getUTCDate()).padStart(2,'0'), hh=String(dt.getUTCHours()).padStart(2,'0');
+          return mm + '/' + dd + ' ' + hh + 'Z';
+        }
+        function labelForScore(score){
+          if(score>=75) return {label:'HIGH AGREEMENT', color:'#5eead4'};
+          if(score>=45) return {label:'MODERATE AGREEMENT', color:'#ffd93d'};
+          return {label:'LOW AGREEMENT', color:'#ff4757'};
+        }
+        window.showAgreementTT = function(e, label, score, trackKm, windKt){
+          const tt = document.getElementById('chartTooltip');
+          const info = labelForScore(score);
+          tt.innerHTML = '<strong style="color:'+info.color+';font-family:var(--mono);font-size:16px;">' + score + '/100</strong><br>' + label + '<br><span style="color:'+info.color+'">' + info.label + '</span><br>±' + trackKm + ' km track · ±' + windKt + ' kt wind';
+          tt.style.left = (e.clientX + 15) + 'px';
+          tt.style.top = (e.clientY + 15) + 'px';
+          tt.style.opacity = 1;
+        };
+        window.hideTT = function(){ document.getElementById('chartTooltip').style.opacity = 0; };
+
+        const Q = String.fromCharCode(39);
+        const CHART = ${JSON.stringify(data)};
+        const buckets = CHART.buckets;
+        const maxTau = Math.ceil(Math.max(...buckets.map(b=>b.endTau))/24)*24 || 24;
+
+        const numTicks = Math.floor(maxTau/24) + 1;
+        const labelStep = Math.max(1, Math.ceil(numTicks / 10));
+        let xGrid='', xLabels='';
+        for(let t=0;t<=maxTau;t+=24){
+          const xPct=(t/maxTau)*100;
+          if(t>0 && t<maxTau) xGrid += '<line x1="'+xPct+'" y1="0" x2="'+xPct+'" y2="100" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.5"/>';
+          if((t/24) % labelStep === 0 || t === maxTau) xLabels += '<div style="position:absolute; bottom:-22px; left:'+xPct+'%; transform:translateX(-50%); font-size:10px; color:var(--dimmer); font-family:var(--mono); white-space:nowrap;">'+formatAxisTime(CHART.cyc, t)+'</div>';
+        }
+
+        const highY = 100-75, modY = 100-45;
+        const yGuides = '<line x1="0" y1="'+highY+'" x2="100" y2="'+highY+'" stroke="#5eead4" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>'
+          + '<line x1="0" y1="'+modY+'" x2="100" y2="'+modY+'" stroke="#ffd93d" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" opacity="0.6"/>'
+          + '<div class="axis-ytick" style="top:-6px;">100</div>'
+          + '<div class="axis-ytick" style="top:calc('+highY+'% - 6px); color:#5eead4;">75</div>'
+          + '<div class="axis-ytick" style="top:calc('+modY+'% - 6px); color:#ffd93d;">45</div>'
+          + '<div class="axis-ytick" style="bottom:-6px;">0</div>'
+          + '<div class="axis-title-y">AGREEMENT SCORE</div>';
+
+        const points = buckets.map(b => ({ tau:(b.startTau+b.endTau)/2, score:b.score, label:b.startTau+'-'+b.endTau+'h', trackKm:b.avgTrackSpreadKm, windKt:b.avgWindSpreadKt }));
+
+        let svgContent = '';
+        for(let i=1;i<points.length;i++){
+          const p1=points[i-1], p2=points[i];
+          const x1=(p1.tau/maxTau)*100, y1=100-p1.score;
+          const x2=(p2.tau/maxTau)*100, y2=100-p2.score;
+          const col = interpColor((p1.score+p2.score)/2, AGREEMENT_STOPS);
+          svgContent += '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="2.5" opacity="0.95" vector-effect="non-scaling-stroke" stroke-linecap="round"/>';
+        }
+        points.forEach(p => {
+          const x=(p.tau/maxTau)*100, y=100-p.score;
+          const col = interpColor(p.score, AGREEMENT_STOPS);
+          svgContent += '<circle cx="'+x+'" cy="'+y+'" r="1.8" fill="'+col+'" stroke="#0a0e14" stroke-width="0.6" vector-effect="non-scaling-stroke" onmousemove="showAgreementTT(event, '+Q+p.label+Q+', '+p.score+', '+p.trackKm+', '+p.windKt+')" onmouseout="hideTT()"><title>'+p.label+'</title></circle>';
+        });
+
+        document.getElementById('chartContainer').innerHTML =
+          '<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; top:0; left:0; overflow:visible;">'
+          + xGrid
+          + '<line x1="0" y1="100" x2="100" y2="100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+          + '<line x1="0" y1="0" x2="0" y2="100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+          + svgContent + '</svg>'
+          + yGuides + xLabels
+          + '<div class="axis-title-x">TIME (UTC)</div>';
+      <\/script>
+    </body>
+    </html>
+  `);
+  newWin.document.close();
+};
+
 function setCycle(cyc) {
   stopPlayback();
   S.playTau = null;
   S.activeCycle = cyc;
-  S.fix = currentFix(S.parsed, cyc);
+  S.fix = currentFix(activeStormObj(), cyc);
+  renderMap();
+  renderDetail();
+}
+
+function setStorm(stormKey) {
+  if(!S.parsed || !S.parsed.storms[stormKey]) return;
+  stopPlayback();
+  S.activeStorm = stormKey;
+  const storm = S.parsed.storms[stormKey];
+  S.activeCycle = storm.cycles[0];
+  S.fix = currentFix(storm, S.activeCycle);
+  S.playTau = null;
+  S.closestPoint = null;
+  coneDensityCacheKey = null;
+  S.detailTab = hasRalData(storm) ? 'ensemble' : 'google';
+  S.showEnsembles = hasRalData(storm); S.showTrackModels = false; S.showIntensityModels = false; S.showHeatmap = false;
+  S.showGoogleEnsembles = !hasRalData(storm) && hasGoogleData(storm);
+  document.getElementById('toggleEnsBtn').classList.toggle('on', S.showEnsembles);
+  document.getElementById('toggleTrackBtn').classList.remove('on');
+  document.getElementById('toggleIntBtn').classList.remove('on');
+  document.getElementById('toggleHeatmapBtn').classList.remove('on');
+  document.getElementById('toggleGoogleBtn').classList.toggle('on', S.showGoogleEnsembles);
+  backToStormView();
   renderMap();
   renderDetail();
 }
@@ -1613,9 +2206,11 @@ function applyClosestRadius(){
 
 function renderDetail(){
   const el = document.getElementById('detailCol');
-  if(!S.parsed || !S.activeCycle){ el.innerHTML=''; return; }
-  const p = S.parsed, fix = S.fix;
+  const p = activeStormObj();
+  if(!p || !S.activeCycle){ el.innerHTML=''; return; }
+  const fix = S.fix;
   const cyc = S.activeCycle;
+  const multiStorm = S.parsed.stormKeys.length > 1;
 
   const ralAvailable = hasRalData(p);
   const googleAvailable = hasGoogleData(p);
@@ -1632,7 +2227,7 @@ function renderDetail(){
   
   const metrics = computeMetrics(activeTracks);
   const probs = computeProbabilities(activeTracks);
-  const agreement = computeAgreement(activeTracks);
+  const agreement = computeAgreementTimeline(activeTracks);
   const ri = computeRIFlag(activeTracks);
   const closest = S.closestPoint ? computeClosestApproach(activeTracks, S.closestPoint, S.closestRadiusMi) : null;
   
@@ -1650,6 +2245,17 @@ function renderDetail(){
       </div>
       <button class="tbtn reload" onclick="resetToUpload()">↺ New File</button>
     </div>
+
+    ${multiStorm ? `
+    <div class="cycle-selector storm-selector">
+      <span class="mono" style="font-size:9px;color:var(--gold);letter-spacing:1px;display:block;margin-bottom:6px;">⚠ ${S.parsed.stormKeys.length} STORMS DETECTED IN THIS FILE — VIEWING:</span>
+      <select id="stormSelect" onchange="setStorm(this.value)">
+        ${S.parsed.stormKeys.map(k => {
+          const st = S.parsed.storms[k];
+          return `<option value="${k}" ${k === S.activeStorm ? 'selected' : ''}>${st.basin}${st.cy} — ${st.stormName}</option>`;
+        }).join('')}
+      </select>
+    </div>` : ''}
 
     <div class="cycle-selector">
       <span class="mono" style="font-size:9px;color:var(--dim);letter-spacing:1px;display:block;margin-bottom:6px;">VIEWING DATA FOR CYCLE:</span>
@@ -1686,16 +2292,17 @@ function renderDetail(){
     ${agreement ? `
     <div class="agreement-box">
       <div class="agreement-head">
-        <span class="lbl">MODEL AGREEMENT · ${srcLabel} (n=${agreement.n})</span>
-        <span class="score" style="color:${agreement.color}">${agreement.score}</span>
+        <span class="lbl">MODEL AGREEMENT · ${srcLabel} (n=${agreement.overall.n})</span>
+        <span class="score" style="color:${agreement.overall.color}">${agreement.overall.score}</span>
       </div>
-      <div class="agreement-bar"><div class="fill" style="width:${agreement.score}%; background:${agreement.color};"></div></div>
+      <div class="agreement-bar"><div class="fill" style="width:${agreement.overall.score}%; background:${agreement.overall.color};"></div></div>
       <div class="agreement-sub">
-        <span style="color:${agreement.color}">${agreement.label}</span>
-        <span>±${agreement.avgTrackSpreadKm} km track spread</span>
-        <span>±${windDisp(agreement.avgWindSpreadKt, S.windUnit)} ${windSuffix(S.windUnit)} wind spread</span>
+        <span style="color:${agreement.overall.color}">OVERALL: ${agreement.overall.label}</span>
+        <span>±${agreement.overall.avgTrackSpreadKm} km track spread</span>
+        <span>±${windDisp(agreement.overall.avgWindSpreadKt, S.windUnit)} ${windSuffix(S.windUnit)} wind spread</span>
       </div>
-    </div>` : ''}
+    </div>
+    ${buildAgreementChart(agreement, cyc, `${chartTitlePrefix} · AGREEMENT OVER TIME`)}` : ''}
 
     <div class="agreement-box">
       <div class="agreement-head">
@@ -1756,16 +2363,38 @@ function clearUploadError(){
   document.getElementById('uploadError').style.display='none';
 }
 
+function pickDefaultStorm(parsed){
+  // When a file contains multiple simultaneous storms, default to whichever
+  // has the most forecast data (a reasonable proxy for "the storm this run
+  // is mainly about"); the storm switcher lets the user immediately pick
+  // a different one regardless.
+  let best = parsed.stormKeys[0], bestScore = -1;
+  parsed.stormKeys.forEach(key => {
+    const st = parsed.storms[key];
+    let score = 0;
+    [st.ensembles, st.trackModels, st.intensityModels, st.googleEnsembles].forEach(bucket => {
+      if(!bucket) return;
+      Object.values(bucket.byCycle).forEach(tracks => {
+        tracks.forEach(t => { score += t.pts.length; });
+      });
+    });
+    if(score > bestScore){ bestScore = score; best = key; }
+  });
+  return best;
+}
+
 function activateParsedData(parsed){
   S.parsed = parsed;
-  S.activeCycle = parsed.cycles[0];
-  S.fix = currentFix(parsed, S.activeCycle);
-  S.detailTab = hasRalData(parsed) ? 'ensemble' : 'google';
+  S.activeStorm = pickDefaultStorm(parsed);
+  const storm = activeStormObj();
+  S.activeCycle = storm.cycles[0];
+  S.fix = currentFix(storm, S.activeCycle);
+  S.detailTab = hasRalData(storm) ? 'ensemble' : 'google';
   coneDensityCacheKey = null;
 
   S.colorBy='model'; S.windUnit='kt';
-  S.showEnsembles = hasRalData(parsed); S.showTrackModels = false; S.showIntensityModels = false; S.showHeatmap = false;
-  S.showGoogleEnsembles = !hasRalData(parsed) && hasGoogleData(parsed);
+  S.showEnsembles = hasRalData(storm); S.showTrackModels = false; S.showIntensityModels = false; S.showHeatmap = false;
+  S.showGoogleEnsembles = !hasRalData(storm) && hasGoogleData(storm);
   S.showCone = false; S.showDensity = false; S.playTau = null; S.playing = false;
   S.closestPoint = null; S.closestRadiusMi = 60;
   if(playTimer){ clearInterval(playTimer); playTimer = null; }
@@ -1780,7 +2409,9 @@ function activateParsedData(parsed){
   document.getElementById('toggleConeBtn').classList.remove('on');
   document.getElementById('toggleDensityBtn').classList.remove('on');
   document.getElementById('playBtn').textContent = '▶';
-  document.getElementById('cycleLabel').textContent = "Loaded Data Successfully";
+  document.getElementById('cycleLabel').textContent = parsed.stormKeys.length > 1
+    ? `Loaded ${parsed.stormKeys.length} storms`
+    : "Loaded Data Successfully";
 
   document.getElementById('uploadScreen').style.display='none';
   document.getElementById('mainScreen').style.display='flex';
@@ -1829,17 +2460,17 @@ async function loadCombinedData(){
     const ralParsed = pendingRalFile ? parseATCF(await readFileText(pendingRalFile)) : null;
     const googleParsed = pendingGoogleFile ? parseGoogleATCF(await readFileText(pendingGoogleFile)) : null;
 
-    if(pendingRalFile && (!ralParsed || !ralParsed.cycles.length)){
+    if(pendingRalFile && (!ralParsed || !ralParsed.stormKeys.length)){
       showUploadError('No recognizable hurricane-model or ensemble rows found in the standard ATCF file. Is it a valid a-deck?');
       return;
     }
-    if(pendingGoogleFile && (!googleParsed || !googleParsed.cycles.length)){
+    if(pendingGoogleFile && (!googleParsed || !googleParsed.stormKeys.length)){
       showUploadError('No recognizable Google WeatherLab ensemble rows (e.g. F000-F0XX) found in that file.');
       return;
     }
 
     const merged = mergeParsedSources(ralParsed, googleParsed);
-    if(!merged.cycles.length){
+    if(!merged.stormKeys.length){
       showUploadError('No usable data found in the provided file(s).');
       return;
     }
@@ -1850,9 +2481,19 @@ async function loadCombinedData(){
   }
 }
 
+function openGuide(){
+  document.getElementById('guideOverlay').classList.add('show');
+}
+function closeGuide(){
+  document.getElementById('guideOverlay').classList.remove('show');
+}
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closeGuide();
+});
+
 function resetToUpload(){
   stopPlayback();
-  S.parsed = null; S.fix = null; S.activeCycle = null;
+  S.parsed = null; S.fix = null; S.activeStorm = null; S.activeCycle = null;
   coneDensityCacheKey = null;
   document.getElementById('mainScreen').style.display='none';
   document.getElementById('uploadScreen').style.display='flex';
@@ -1919,6 +2560,11 @@ document.getElementById('toggleHeatmapBtn').onclick = ()=>{
   S.showHeatmap = !S.showHeatmap;
   document.getElementById('toggleHeatmapBtn').classList.toggle('on', S.showHeatmap);
   renderMap();
+};
+document.getElementById('toggleCitiesBtn').onclick = ()=>{
+  S.showCities = !S.showCities;
+  document.getElementById('toggleCitiesBtn').classList.toggle('on', S.showCities);
+  renderCitiesLayer();
 };
 
 document.getElementById('toggleConeBtn').onclick = ()=>{
