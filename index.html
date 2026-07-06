@@ -63,7 +63,12 @@
   .source-slot .ss-title{font-weight:700;font-size:13px;margin-bottom:4px;}
   .source-slot .ss-sub{font-family:var(--mono);font-size:10px;color:var(--dim);}
   .source-slot .ss-file{font-family:var(--mono);font-size:11px;color:var(--low);margin-top:8px;
-    word-break:break-all;padding:0 6px;}
+    word-break:break-all;padding:0 6px;text-align:left;max-height:110px;overflow-y:auto;}
+  .ss-file-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:3px 8px;border-radius:4px;background:rgba(94,234,212,.06);margin-bottom:3px;}
+  .ss-file-row .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ss-file-remove{flex-shrink:0;color:var(--dimmer);cursor:pointer;font-size:10px;padding:0 2px;}
+  .ss-file-remove:hover{color:#ff8a94;}
   .source-slot .ss-clear{position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:9px;
     color:var(--dimmer);background:none;border:1px solid var(--line);border-radius:4px;
     padding:2px 6px;cursor:pointer;display:none;}
@@ -90,6 +95,14 @@
     background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:8px;
     cursor:pointer;transition:.15s;white-space:nowrap;flex-shrink:0;}
   .guide-btn:hover{color:var(--ink);border-color:var(--atl);}
+
+  #shareToast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--panel);border:1px solid var(--atl);color:var(--ink);
+    font-family:var(--mono);font-size:12px;padding:12px 20px;border-radius:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:6000;opacity:0;pointer-events:none;
+    transition:opacity .25s, transform .25s;}
+  #shareToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #shareToast.error{border-color:#ff4757;color:#ff8a94;}
 
   #guideOverlay{display:none;position:fixed;inset:0;background:rgba(5,8,13,.75);
     backdrop-filter:blur(4px);z-index:5000;align-items:flex-start;justify-content:center;
@@ -166,6 +179,13 @@
   .agreement-bar .fill{height:100%;border-radius:4px;transition:width .3s;}
   .agreement-sub{margin-top:8px;font-family:var(--mono);font-size:9.5px;color:var(--dimmer);display:flex;gap:16px;flex-wrap:wrap;}
 
+  .trend-row{margin:14px 20px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .trend-chip{font-family:var(--mono);font-size:10px;font-weight:600;padding:5px 10px;border-radius:6px;
+    background:var(--panel);border:1px solid var(--line);color:var(--dim);white-space:nowrap;}
+  .trend-chip.up{color:#ff9f43;border-color:rgba(255,159,67,.4);background:rgba(255,159,67,.08);}
+  .trend-chip.down{color:#5eead4;border-color:rgba(94,234,212,.4);background:rgba(94,234,212,.08);}
+  .trend-since{font-family:var(--mono);font-size:9px;color:var(--dimmer);margin-left:2px;}
+
   .ri-box{margin:16px 20px 0;padding:14px 16px;border-radius:8px;border:1px solid var(--line);background:var(--panel);}
   .ri-box.warn{border-color:#ff9f43;background:rgba(255,159,67,.08);}
   .ri-box .ri-head{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;display:flex;gap:8px;align-items:center;}
@@ -238,6 +258,16 @@
     position:relative;overflow:hidden}
   .mrow .mtrack i{display:block;height:100%;border-radius:4px}
   .mrow .mv{font-family:var(--mono);font-size:12px;width:30px;text-align:right;color:var(--dim);font-weight:600}
+  .mrow-click{cursor:pointer;padding:3px 6px;margin:0 -6px;border-radius:5px;transition:.15s;border:1px solid transparent;}
+  .mrow-click:hover{background:rgba(63,182,255,.06);}
+  .mrow-click.active{background:rgba(63,182,255,.12);border-color:rgba(63,182,255,.4);}
+  .mrow-click.active .mn{color:var(--atl);}
+  .isolate-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin:0 20px 10px;padding:8px 12px;background:rgba(63,182,255,.1);border:1px solid rgba(63,182,255,.35);
+    border-radius:7px;font-family:var(--mono);font-size:10.5px;color:var(--atl);}
+  .isolate-banner button{font-family:var(--mono);font-size:9.5px;color:var(--dim);background:none;
+    border:1px solid var(--line);border-radius:5px;padding:3px 9px;cursor:pointer;}
+  .isolate-banner button:hover{color:var(--ink);border-color:var(--dimmer);}
 
   .chart-wrap { position: relative; background: var(--panel); margin-bottom: 12px; }
   .fs-btn { position: absolute; right: 20px; top: 16px; background: var(--line); border: none; color: var(--ink); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 10px; font-family: var(--mono); font-weight:700; transition:0.15s;}
@@ -259,10 +289,13 @@
   <div class="brand" onclick="resetToUpload()" title="Return to home"><b>GENESIS</b>·DESK</div>
   <div class="tagline">ATCF File Reader · Runs Entirely In Your Browser</div>
   <button class="guide-btn" style="margin-left:20px;" onclick="openGuide()">📖 User Guide</button>
+  <button class="guide-btn" id="shareBtn" style="margin-left:8px;" onclick="generateShareLink()" title="Copy a link that reopens this exact view">🔗 Share View</button>
   <div class="clock">
     <b id="cycleLabel">—</b>
   </div>
 </header>
+
+<div id="shareToast"></div>
 
 <div id="uploadScreen">
   <div class="upload-card">
@@ -270,7 +303,7 @@
       <h1 style="margin-bottom:0;">Load an ATCF a-deck</h1>
       <button class="guide-btn" onclick="openGuide()">📖 User Guide</button>
     </div>
-    <p class="lede">Drop one or both ATCF a-deck sources below — the standard NHC/RAL a-deck, a Google WeatherLab a-deck, or both — to analyze ensemble spread and guidance models.</p>
+    <p class="lede">Drop one or both ATCF a-deck sources below — the standard NHC/RAL a-deck, one or more Google WeatherLab a-decks, or both — to analyze ensemble spread and guidance models.</p>
 
     <div class="source-grid">
       <div class="source-slot" id="slotRal" onclick="document.getElementById('fileInputRal').click()">
@@ -278,7 +311,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <div class="ss-label">Source 1</div>
         <div class="ss-title">Standard ATCF (RAL / NHC)</div>
-        <div class="ss-sub">.dat · .dat.gz · .txt</div>
+        <div class="ss-sub">.dat · .dat.gz · .txt · one file</div>
         <div class="ss-file" id="slotRalFile"></div>
       </div>
       <div class="source-slot" id="slotGoogle" onclick="document.getElementById('fileInputGoogle').click()">
@@ -286,12 +319,12 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <div class="ss-label">Source 2</div>
         <div class="ss-title">Google WeatherLab ATCF</div>
-        <div class="ss-sub">.txt a-deck (FNV3, etc.)</div>
+        <div class="ss-sub">.txt a-deck · multiple runs supported</div>
         <div class="ss-file" id="slotGoogleFile"></div>
       </div>
     </div>
     <input type="file" id="fileInputRal" accept=".dat,.gz,.txt">
-    <input type="file" id="fileInputGoogle" accept=".dat,.gz,.txt">
+    <input type="file" id="fileInputGoogle" accept=".dat,.gz,.txt" multiple>
 
     <button id="loadDataBtn" onclick="loadCombinedData()">Load Data</button>
     <div class="upload-error" id="uploadError"></div>
@@ -384,9 +417,10 @@
       <ul>
         <li>Go to <code>deepmind.google.com/science/weatherlab</code> and hit the <b>Download Data</b> button in the top right corner, next to the settings gear icon.</li>
         <li>Select <b>our experimental model</b>, then <b>Ensemble</b>, then <b>ATCF</b>.</li>
-        <li>This is also where you pick which run to use — choose the most recent DeepMind run available.</li>
+        <li>This is also where you pick which run to use.</li>
         <li>Hit the <b>download link</b> to get the file, then upload it into <b>Source 2</b> on the home screen.</li>
       </ul>
+      <div class="guide-note">Source 2 accepts <b>multiple files at once</b>, and you can keep adding more later (each file appears in its own removable row). Upload several runs of the same storm — say, this run and the last few before it — and every run's cycle shows up together in the <b>"Viewing data for cycle"</b> dropdown, so you can flip between runs and see how the forecast has changed over time. Source 1 (RAL/NHC) still takes one file at a time.</div>
 
       <p>Both accept <code>.dat</code>, <code>.dat.gz</code> (gzip is decompressed automatically), or plain <code>.txt</code>. Once at least one file is chosen, the <b>Load Data</b> button lights up — click it to parse and open the storm view.</p>
       <div class="guide-note">If you upload both sources for the same storm, everything from each stays independently selectable — nothing gets blended together.</div>
@@ -421,6 +455,9 @@
         <li>Click the <b>GENESIS·DESK</b> logo (or the <b>↺ New File</b> button in the side panel) anytime to return to the upload screen.</li>
         <li>Everything runs entirely in your browser — files are never uploaded to a server.</li>
         <li>This guide is always one click away via the <b>📖 User Guide</b> button, both here and inside the main view.</li>
+        <li><b>Click any row in Probability Distribution</b> (e.g. "CAT 3") to isolate just the members reaching that threshold — everyone else dims out on the map and charts. Click it again to clear.</li>
+        <li><b>🔗 Share View</b> (top header) copies a link that reopens your exact current view — same data, same storm/cycle/tab, same toggles — for whoever you send it to, with no re-upload needed. Everything's encoded right in the link, so very large files can make for a long URL.</li>
+        <li>If a storm has more than one run loaded, a <b>run-to-run trend</b> row appears under the metrics showing how much the track and intensity have shifted since the previous run.</li>
       </ul>
 
     </div>
@@ -626,6 +663,47 @@ function emptyStorm(basin, cy){
   };
 }
 
+/* Combines multiple parse results of the same source type (used for
+   uploading several Google WeatherLab files at once, e.g. one per run) into
+   a single {storms, stormKeys} structure. Matching storms (by basin+cy)
+   have their cycles merged together, so different runs of the same storm
+   all show up as selectable cycles rather than overwriting each other. If
+   the same storm+cycle appears in more than one file, the later file wins. */
+function mergeMultipleParses(parsedList){
+  const merged = {};
+  parsedList.forEach(parsed => {
+    if(!parsed) return;
+    parsed.stormKeys.forEach(key => {
+      const src = parsed.storms[key];
+      if(!merged[key]){
+        merged[key] = {
+          basin: src.basin, cy: src.cy, stormName: src.stormName,
+          trackModels: { byCycle: {} }, intensityModels: { byCycle: {} }, ensembles: { byCycle: {} }
+        };
+      }
+      const dest = merged[key];
+      if((!dest.stormName || dest.stormName.startsWith('TC ')) && src.stormName && !src.stormName.startsWith('TC ')){
+        dest.stormName = src.stormName;
+      }
+      ['trackModels','intensityModels','ensembles'].forEach(field => {
+        Object.assign(dest[field].byCycle, src[field].byCycle);
+      });
+    });
+  });
+
+  const stormKeys = Object.keys(merged).sort();
+  stormKeys.forEach(key => {
+    const st = merged[key];
+    st.cycles = [...new Set([
+      ...Object.keys(st.trackModels.byCycle),
+      ...Object.keys(st.intensityModels.byCycle),
+      ...Object.keys(st.ensembles.byCycle)
+    ])].sort().reverse();
+  });
+
+  return { storms: merged, stormKeys };
+}
+
 /* Combines an optional RAL/NHC-style a-deck parse and an optional Google
    WeatherLab a-deck parse into one unified, multi-storm data set. Either
    source may be absent. Storms are matched across sources by basin+cy; a
@@ -728,6 +806,51 @@ function haversineKm(lat1, lon1, lat2, lon2){
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
+function compassBearing(lat1, lon1, lat2, lon2){
+  const toRad = d => d*Math.PI/180, toDeg = r => r*180/Math.PI;
+  const dLon = toRad(lon2-lon1);
+  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1))*Math.sin(toRad(lat2)) - Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(dLon);
+  const brng = (toDeg(Math.atan2(y, x)) + 360) % 360;
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(brng/22.5) % 16];
+}
+
+/* Run-to-run trend: compares the current cycle's ensemble/model MEAN track
+   against the previous available cycle for the same group, using each
+   run's initial (tau=0) fix and overall peak intensity — how much has the
+   model's read on this storm shifted since the last run came in. */
+function computeRunTrend(storm, groupField, currentCyc){
+  if(!storm || !storm[groupField]) return null;
+  const cycles = storm.cycles.filter(c => storm[groupField].byCycle[c]);
+  const idx = cycles.indexOf(currentCyc);
+  if(idx === -1 || idx+1 >= cycles.length) return null;
+  const prevCyc = cycles[idx+1];
+
+  const curTracks = storm[groupField].byCycle[currentCyc] || [];
+  const prevTracks = storm[groupField].byCycle[prevCyc] || [];
+  const curMean = curTracks.find(t=>t.member==='ENS MEAN') || curTracks[0];
+  const prevMean = prevTracks.find(t=>t.member==='ENS MEAN') || prevTracks[0];
+  if(!curMean || !prevMean || !curMean.pts.length || !prevMean.pts.length) return null;
+
+  const curP0 = curMean.pts[0], prevP0 = prevMean.pts[0];
+  const posShiftMi = Math.round(haversineKm(prevP0[1], prevP0[0], curP0[1], curP0[0]) * KM_TO_MI);
+  const bearing = compassBearing(prevP0[1], prevP0[0], curP0[1], curP0[0]);
+
+  // Compare against the same "MEAN PEAK WIND" / "MEAN MIN PRESSURE" stats
+  // shown in the metrics grid above (the average of each member's own peak
+  // wind / own minimum pressure) rather than the peak of the ENS MEAN
+  // track's own curve — those are different quantities, and the trend
+  // badge should track whichever one the person is actually looking at.
+  const curMetrics = computeMetrics(curTracks);
+  const prevMetrics = computeMetrics(prevTracks);
+  const peakDeltaKt = Math.round(curMetrics.meanVmax - prevMetrics.meanVmax);
+  const curHasPres = curMetrics.meanMinP && curMetrics.meanMinP !== 1013;
+  const prevHasPres = prevMetrics.meanMinP && prevMetrics.meanMinP !== 1013;
+  const minPDeltaMb = (curHasPres && prevHasPres) ? Math.round(curMetrics.meanMinP - prevMetrics.meanMinP) : null;
+
+  return { prevCyc, posShiftMi, bearing, peakDeltaKt, minPDeltaMb };
+}
 
 /* Model agreement score: how tightly clustered the members/models are on
    track position and wind. Computed per-forecast-hour, then bucketed into
@@ -779,10 +902,10 @@ function computeAgreementTimeline(tracks, bucketHours){
     const inBucket = bucketMap[idx];
     const start = idx * bucketHours, end = start + bucketHours;
     const score = Math.round(inBucket.reduce((s,p)=>s+p.score,0) / inBucket.length);
-    const avgTrackSpreadKm = Math.round(inBucket.reduce((s,p)=>s+p.trackSpreadKm,0) / inBucket.length);
+    const avgTrackSpreadMi = Math.round(inBucket.reduce((s,p)=>s+p.trackSpreadKm,0) / inBucket.length * KM_TO_MI);
     const avgWindSpreadKt = Math.round(inBucket.reduce((s,p)=>s+p.windSpreadKt,0) / inBucket.length);
     return {
-      startTau: start, endTau: Math.min(end, maxTau), score, avgTrackSpreadKm, avgWindSpreadKt,
+      startTau: start, endTau: Math.min(end, maxTau), score, avgTrackSpreadMi, avgWindSpreadKt,
       ...labelForAgreementScore(score)
     };
   });
@@ -790,7 +913,7 @@ function computeAgreementTimeline(tracks, bucketHours){
   const overallScoreRaw = Math.round(perTau.reduce((s,p)=>s+p.score,0) / perTau.length);
   const overall = {
     score: overallScoreRaw,
-    avgTrackSpreadKm: Math.round(perTau.reduce((s,p)=>s+p.trackSpreadKm,0) / perTau.length),
+    avgTrackSpreadMi: Math.round(perTau.reduce((s,p)=>s+p.trackSpreadKm,0) / perTau.length * KM_TO_MI),
     avgWindSpreadKt: Math.round(perTau.reduce((s,p)=>s+p.windSpreadKt,0) / perTau.length),
     n: validTracks.length,
     ...labelForAgreementScore(overallScoreRaw)
@@ -980,9 +1103,13 @@ const S = {
   showCone: false, showDensity: false,
   playTau: null, playing: false,
   closestPoint: null, closestRadiusMi: 60,
+  isolateThreshold: null,
   colorBy: 'model', detailTab: 'ensemble', windUnit: 'kt'
 };
 let playTimer = null;
+
+const ISOLATE_THRESH_KT = { TD:25, TS:34, C1:64, C2:83, C3:96, C4:113, C5:137 };
+const ISOLATE_THRESH_LABEL = { TD:'TD', TS:'TS', C1:'CAT 1+', C2:'CAT 2+', C3:'CAT 3+', C4:'CAT 4+', C5:'CAT 5' };
 
 /* S.parsed is now { storms: {stormKey: {...}}, stormKeys: [...] } to support
    files that contain more than one active storm at once (e.g. a Google
@@ -1030,11 +1157,11 @@ window.hideTT = function(){
   const tt = document.getElementById('chartTooltip');
   if(tt) tt.style.opacity = 0;
 };
-window.showAgreementTT = function(e, label, score, trackKm, windKt){
+window.showAgreementTT = function(e, label, score, trackMi, windKt){
   const tt = document.getElementById('chartTooltip');
   if(!tt) return;
   const info = labelForAgreementScore(score);
-  tt.innerHTML = '<strong style="color:'+info.color+';font-family:var(--mono);font-size:16px;">' + score + '/100</strong><br>' + label + '<br><span style="color:'+info.color+'">' + info.label + '</span><br>±' + trackKm + ' km track · ±' + windDisp(windKt, S.windUnit) + ' ' + windSuffix(S.windUnit) + ' wind';
+  tt.innerHTML = '<strong style="color:'+info.color+';font-family:var(--mono);font-size:16px;">' + score + '/100</strong><br>' + label + '<br><span style="color:'+info.color+'">' + info.label + '</span><br>±' + trackMi + ' mi track · ±' + windDisp(windKt, S.windUnit) + ' ' + windSuffix(S.windUnit) + ' wind';
   tt.style.left = (e.clientX + 15) + 'px';
   tt.style.top = (e.clientY + 15) + 'px';
   tt.style.opacity = 1;
@@ -1266,10 +1393,11 @@ function renderDensityKey(total){
     <div class="ends"><span>0%</span><span>100%</span></div>`;
 }
 
-function renderMapTracks(tracks, modelClassColor) {
+function renderMapTracks(tracks, modelClassColor, isolateSet) {
   tracks.forEach(tr => {
     if(!tr.pts.length) return;
     const isMean = tr.member === 'ENS MEAN';
+    const isDimmed = !!isolateSet && !isMean && !isolateSet.has(tr.member);
     const color = isMean ? '#ffffff' : (modelClassColor || ENS_FAMILY_COLOR[ensembleFamily(tr.member || tr.model)] || '#94a3b8');
     const maxV = Math.max(...tr.pts.map(p=>p[2]));
     const minP = Math.min(...tr.pts.filter(p=>p[4]&&p[4]!==1013).map(p=>p[4])) || 1013;
@@ -1281,7 +1409,7 @@ function renderMapTracks(tracks, modelClassColor) {
                     Min Pres: <span style="color:var(--ink);font-family:var(--mono)">${dispP}</span>`;
 
     const baseWidth = isMean ? 3 : 1.5;
-    const opacity = isMean ? 1 : 0.65;
+    const opacity = isDimmed ? 0.06 : (isMean ? 1 : 0.65);
 
     // Draw lines
     if(tr.pts.length > 1){
@@ -1308,7 +1436,7 @@ function renderMapTracks(tracks, modelClassColor) {
       const dotColor = S.colorBy==='model' ? color : trackSegColor(last, last);
       const dotSize = isMean ? 4 : 2;
       
-      const dot = L.circleMarker([last[1], last[0]], {radius: dotSize, color: null, fillColor: dotColor, fillOpacity: 1});
+      const dot = L.circleMarker([last[1], last[0]], {radius: dotSize, color: null, fillColor: dotColor, fillOpacity: isDimmed ? 0.08 : 1});
       dot.bindTooltip(ttHtml, {sticky: true, className: 'map-tt'});
       dot.addTo(mapLayerGroup);
     }
@@ -1439,18 +1567,35 @@ function renderMap() {
     });
   }
 
-  // Cone + density are scoped to whichever detail tab is active (Ensembles / Intensity Models / Google).
-  // Neither depends on playTau, so cache by (cycle, tab, toggle state) and skip the
-  // expensive recompute + layer rebuild on every play-scrub frame.
+  // Cone + density (and member isolation) are scoped to whichever detail tab is
+  // active (Ensembles / Intensity Models / Google).
+  const tabTracks = S.detailTab === 'ensemble' ? (storm.ensembles.byCycle[cyc] || [])
+    : S.detailTab === 'google' ? ((storm.googleEnsembles && storm.googleEnsembles.byCycle[cyc]) || [])
+    : (storm.intensityModels.byCycle[cyc] || []);
+  const tabColorForCone = S.detailTab === 'ensemble' ? '#3fb6ff' : S.detailTab === 'google' ? '#34c98e' : '#ff9f43';
+
+  // If a probability bucket is isolated, figure out which members (in the
+  // active tab's group only) qualify, so their tracks can be highlighted
+  // and everyone else dimmed. Based on each member's full/untruncated peak
+  // wind, not just what's visible up to the current play-scrub position.
+  let isolateSet = null;
+  if(S.isolateThreshold != null){
+    const thresholdKt = ISOLATE_THRESH_KT[S.isolateThreshold];
+    isolateSet = new Set(
+      tabTracks.filter(t => t.member !== 'ENS MEAN' && Math.max(...t.pts.map(p=>p[2])) >= thresholdKt)
+        .map(t => t.member)
+    );
+  }
+  const isolateSetFor = (tab) => (S.detailTab === tab) ? isolateSet : null;
+
+  // Neither cone nor density depends on playTau, so cache by (cycle, tab, toggle
+  // state) and skip the expensive recompute + layer rebuild on every play-scrub frame.
   const coneDensityKey = [S.activeStorm, cyc, S.detailTab, S.showCone, S.showDensity].join('|');
   if(coneDensityKey !== coneDensityCacheKey){
     coneDensityCacheKey = coneDensityKey;
     coneDensityGroup.clearLayers();
 
-    const tabTracks = S.detailTab === 'ensemble' ? (storm.ensembles.byCycle[cyc] || [])
-      : S.detailTab === 'google' ? ((storm.googleEnsembles && storm.googleEnsembles.byCycle[cyc]) || [])
-      : (storm.intensityModels.byCycle[cyc] || []);
-    const tabColor = S.detailTab === 'ensemble' ? '#3fb6ff' : S.detailTab === 'google' ? '#34c98e' : '#ff9f43';
+    const tabColor = tabColorForCone;
 
     if(S.showCone){
       const steps = computeConeSteps(tabTracks, 6);
@@ -1479,10 +1624,10 @@ function renderMap() {
     document.getElementById('densityKey').style.display='none';
   }
 
-  if(S.showEnsembles) renderMapTracks(ensTracks, null);
+  if(S.showEnsembles) renderMapTracks(ensTracks, null, isolateSetFor('ensemble'));
   if(S.showTrackModels) renderMapTracks(trackTracks, '#3fb6ff');
-  if(S.showIntensityModels) renderMapTracks(intTracks, '#ff9f43');
-  if(S.showGoogleEnsembles) renderMapTracks(googleTracks, '#34c98e');
+  if(S.showIntensityModels) renderMapTracks(intTracks, '#ff9f43', isolateSetFor('intensity'));
+  if(S.showGoogleEnsembles) renderMapTracks(googleTracks, '#34c98e', isolateSetFor('google'));
 
   if(S.playTau != null){
     if(S.showEnsembles) renderPlayMarkers(ensTracks, null);
@@ -1753,7 +1898,7 @@ window.openChartInNewTab = function(btn) {
   newWin.document.close();
 };
 
-function buildChart(tracksList, mode, title, noDataMsg, cyc){
+function buildChart(tracksList, mode, title, noDataMsg, cyc, isolateSet){
   if(!tracksList || tracksList.length===0){
     return `<div class="chart-wrap">
       <div class="sect-h">${title}</div>
@@ -1810,9 +1955,10 @@ function buildChart(tracksList, mode, title, noDataMsg, cyc){
 
     svgContent = sortedList.map(tr=>{
       const isMean = tr.member === 'ENS MEAN';
+      const isDimmed = !!isolateSet && !isMean && !isolateSet.has(tr.member);
       const sortedPts=[...tr.pts].sort((a,b)=>a[3]-b[3]);
       const label = tr.member || tr.model || '';
-      const opacity = isMean ? 1 : 0.45;
+      const opacity = isDimmed ? 0.06 : (isMean ? 1 : 0.45);
       const width = isMean ? 3 : 1.5;
       const lineClass = isMean ? 'intensity-line line-mean' : 'intensity-line';
       
@@ -1844,9 +1990,10 @@ function buildChart(tracksList, mode, title, noDataMsg, cyc){
 
     svgContent = sortedList.map(tr=>{
       const isMean = tr.member === 'ENS MEAN';
+      const isDimmed = !!isolateSet && !isMean && !isolateSet.has(tr.member);
       const sortedPts=[...tr.pts].sort((a,b)=>a[3]-b[3]);
       const label = tr.member || tr.model || '';
-      const opacity = isMean ? 1 : 0.45;
+      const opacity = isDimmed ? 0.06 : (isMean ? 1 : 0.45);
       const width = isMean ? 3 : 1.5;
       const lineClass = isMean ? 'intensity-line line-mean' : 'intensity-line';
       
@@ -1906,12 +2053,19 @@ function buildChart(tracksList, mode, title, noDataMsg, cyc){
     </div>`;
 }
 
-function probRow(label, p, color){
-  return `<div class="mrow">
+function probRow(label, p, color, key){
+  const active = S.isolateThreshold === key;
+  return `<div class="mrow mrow-click ${active?'active':''}" onclick="toggleIsolate('${key}')" title="Click to isolate members reaching ${label}">
     <span class="mn">${label}</span>
     <div class="mtrack"><i style="width:${p*100}%;background:${color}"></i></div>
     <span class="mv">${Math.round(p*100)}%</span>
   </div>`;
+}
+
+function toggleIsolate(key){
+  S.isolateThreshold = (S.isolateThreshold === key) ? null : key;
+  renderMap();
+  renderDetail();
 }
 
 /* Model-agreement-over-time chart: same visual language as the wind/pressure
@@ -1945,7 +2099,7 @@ function buildAgreementChart(agreement, cyc, title){
 
   const points = buckets.map(b => ({
     tau: (b.startTau + b.endTau) / 2, score: b.score,
-    label: `${b.startTau}-${b.endTau}h`, trackKm: b.avgTrackSpreadKm, windKt: b.avgWindSpreadKt
+    label: `${b.startTau}-${b.endTau}h`, trackMi: b.avgTrackSpreadMi, windKt: b.avgWindSpreadKt
   }));
 
   let svgContent = '';
@@ -1959,7 +2113,7 @@ function buildAgreementChart(agreement, cyc, title){
   points.forEach(p => {
     const x = (p.tau/maxTau)*100, y = 100-p.score;
     const col = interpColor(p.score, AGREEMENT_STOPS);
-    svgContent += `<circle cx="${x}" cy="${y}" r="1.8" fill="${col}" stroke="#0a0e14" stroke-width="0.6" vector-effect="non-scaling-stroke" onmousemove="showAgreementTT(event, '${p.label}', ${p.score}, ${p.trackKm}, ${p.windKt})" onmouseout="hideTT()"><title>${p.label}: ${p.score}</title></circle>`;
+    svgContent += `<circle cx="${x}" cy="${y}" r="1.8" fill="${col}" stroke="#0a0e14" stroke-width="0.6" vector-effect="non-scaling-stroke" onmousemove="showAgreementTT(event, '${p.label}', ${p.score}, ${p.trackMi}, ${p.windKt})" onmouseout="hideTT()"><title>${p.label}: ${p.score}</title></circle>`;
   });
 
   const payload = { title, cyc, buckets, overall: agreement.overall };
@@ -2078,10 +2232,10 @@ window.openAgreementChartInNewTab = function(btn) {
           if(score>=45) return {label:'MODERATE AGREEMENT', color:'#ffd93d'};
           return {label:'LOW AGREEMENT', color:'#ff4757'};
         }
-        window.showAgreementTT = function(e, label, score, trackKm, windKt){
+        window.showAgreementTT = function(e, label, score, trackMi, windKt){
           const tt = document.getElementById('chartTooltip');
           const info = labelForScore(score);
-          tt.innerHTML = '<strong style="color:'+info.color+';font-family:var(--mono);font-size:16px;">' + score + '/100</strong><br>' + label + '<br><span style="color:'+info.color+'">' + info.label + '</span><br>±' + trackKm + ' km track · ±' + windKt + ' kt wind';
+          tt.innerHTML = '<strong style="color:'+info.color+';font-family:var(--mono);font-size:16px;">' + score + '/100</strong><br>' + label + '<br><span style="color:'+info.color+'">' + info.label + '</span><br>±' + trackMi + ' mi track · ±' + windKt + ' kt wind';
           tt.style.left = (e.clientX + 15) + 'px';
           tt.style.top = (e.clientY + 15) + 'px';
           tt.style.opacity = 1;
@@ -2111,7 +2265,7 @@ window.openAgreementChartInNewTab = function(btn) {
           + '<div class="axis-ytick" style="bottom:-6px;">0</div>'
           + '<div class="axis-title-y">AGREEMENT SCORE</div>';
 
-        const points = buckets.map(b => ({ tau:(b.startTau+b.endTau)/2, score:b.score, label:b.startTau+'-'+b.endTau+'h', trackKm:b.avgTrackSpreadKm, windKt:b.avgWindSpreadKt }));
+        const points = buckets.map(b => ({ tau:(b.startTau+b.endTau)/2, score:b.score, label:b.startTau+'-'+b.endTau+'h', trackMi:b.avgTrackSpreadMi, windKt:b.avgWindSpreadKt }));
 
         let svgContent = '';
         for(let i=1;i<points.length;i++){
@@ -2124,7 +2278,7 @@ window.openAgreementChartInNewTab = function(btn) {
         points.forEach(p => {
           const x=(p.tau/maxTau)*100, y=100-p.score;
           const col = interpColor(p.score, AGREEMENT_STOPS);
-          svgContent += '<circle cx="'+x+'" cy="'+y+'" r="1.8" fill="'+col+'" stroke="#0a0e14" stroke-width="0.6" vector-effect="non-scaling-stroke" onmousemove="showAgreementTT(event, '+Q+p.label+Q+', '+p.score+', '+p.trackKm+', '+p.windKt+')" onmouseout="hideTT()"><title>'+p.label+'</title></circle>';
+          svgContent += '<circle cx="'+x+'" cy="'+y+'" r="1.8" fill="'+col+'" stroke="#0a0e14" stroke-width="0.6" vector-effect="non-scaling-stroke" onmousemove="showAgreementTT(event, '+Q+p.label+Q+', '+p.score+', '+p.trackMi+', '+p.windKt+')" onmouseout="hideTT()"><title>'+p.label+'</title></circle>';
         });
 
         document.getElementById('chartContainer').innerHTML =
@@ -2145,6 +2299,7 @@ window.openAgreementChartInNewTab = function(btn) {
 function setCycle(cyc) {
   stopPlayback();
   S.playTau = null;
+  S.isolateThreshold = null;
   S.activeCycle = cyc;
   S.fix = currentFix(activeStormObj(), cyc);
   renderMap();
@@ -2160,6 +2315,7 @@ function setStorm(stormKey) {
   S.fix = currentFix(storm, S.activeCycle);
   S.playTau = null;
   S.closestPoint = null;
+  S.isolateThreshold = null;
   coneDensityCacheKey = null;
   S.detailTab = hasRalData(storm) ? 'ensemble' : 'google';
   S.showEnsembles = hasRalData(storm); S.showTrackModels = false; S.showIntensityModels = false; S.showHeatmap = false;
@@ -2176,6 +2332,7 @@ function setStorm(stormKey) {
 
 function setDetailTab(tab) {
   S.detailTab = tab;
+  S.isolateThreshold = null;
   renderMap();
   renderDetail();
 }
@@ -2221,21 +2378,29 @@ function renderDetail(){
 
   const isEns = S.detailTab === 'ensemble';
   const isGoogle = S.detailTab === 'google';
-  const activeTracks = isGoogle ? ((p.googleEnsembles && p.googleEnsembles.byCycle[cyc]) || [])
-    : isEns ? (p.ensembles.byCycle[cyc] || [])
-    : (p.intensityModels.byCycle[cyc] || []);
+  const groupField = isGoogle ? 'googleEnsembles' : isEns ? 'ensembles' : 'intensityModels';
+  const activeTracks = (p[groupField] && p[groupField].byCycle[cyc]) || [];
   
   const metrics = computeMetrics(activeTracks);
   const probs = computeProbabilities(activeTracks);
   const agreement = computeAgreementTimeline(activeTracks);
   const ri = computeRIFlag(activeTracks);
   const closest = S.closestPoint ? computeClosestApproach(activeTracks, S.closestPoint, S.closestRadiusMi) : null;
+  const runTrend = computeRunTrend(p, groupField, cyc);
+
+  let chartIsolateSet = null, isolateCount = 0;
+  if(S.isolateThreshold != null){
+    const thresholdKt = ISOLATE_THRESH_KT[S.isolateThreshold];
+    const qualifying = activeTracks.filter(t => t.member !== 'ENS MEAN' && Math.max(...t.pts.map(p=>p[2])) >= thresholdKt).map(t=>t.member);
+    chartIsolateSet = new Set(qualifying);
+    isolateCount = qualifying.length;
+  }
   
   const srcLabel = isGoogle ? 'GOOGLE' : isEns ? 'ENSEMBLE' : 'INTENSITY';
   const chartTitlePrefix = isGoogle ? 'GOOGLE WEATHERLAB ENSEMBLE' : isEns ? 'ENSEMBLE MEMBERS' : 'INTENSITY GUIDANCE';
 
-  const windChart = buildChart(activeTracks, 'wind', `${chartTitlePrefix} · INTENSITY / WIND`, `NO ${srcLabel} DATA AVAILABLE FOR THIS CYCLE`, cyc);
-  const presChart = buildChart(activeTracks, 'pressure', `${chartTitlePrefix} · MINIMUM SEA LEVEL PRESSURE`, `NO ${srcLabel} DATA AVAILABLE FOR THIS CYCLE`, cyc);
+  const windChart = buildChart(activeTracks, 'wind', `${chartTitlePrefix} · INTENSITY / WIND`, `NO ${srcLabel} DATA AVAILABLE FOR THIS CYCLE`, cyc, chartIsolateSet);
+  const presChart = buildChart(activeTracks, 'pressure', `${chartTitlePrefix} · MINIMUM SEA LEVEL PRESSURE`, `NO ${srcLabel} DATA AVAILABLE FOR THIS CYCLE`, cyc, chartIsolateSet);
 
   el.innerHTML = `
     <div class="detail-head">
@@ -2277,6 +2442,21 @@ function renderDetail(){
       <div class="metric"><div class="v">${metrics.meanMinP && metrics.meanMinP !== 1013 ? metrics.meanMinP : '—'}<span style="font-size:11px;color:var(--dim)"> mb</span></div><div class="k">${srcLabel} MEAN MIN PRESSURE</div></div>
     </div>
 
+    ${runTrend ? `
+    <div class="trend-row">
+      <span class="trend-chip" title="Mean track's initial position moved ${runTrend.posShiftMi}mi ${runTrend.bearing} since the ${formatCycle(runTrend.prevCyc)} run">
+        📍 TRACK ${runTrend.posShiftMi===0?'UNCHANGED':`${runTrend.posShiftMi}mi ${runTrend.bearing}`}
+      </span>
+      <span class="trend-chip ${runTrend.peakDeltaKt>0?'up':runTrend.peakDeltaKt<0?'down':''}" title="Peak wind vs the ${formatCycle(runTrend.prevCyc)} run">
+        💨 PEAK ${runTrend.peakDeltaKt>0?'+':''}${windDisp(runTrend.peakDeltaKt, S.windUnit)}${windSuffix(S.windUnit)}
+      </span>
+      ${runTrend.minPDeltaMb!=null ? `
+      <span class="trend-chip ${runTrend.minPDeltaMb<0?'up':runTrend.minPDeltaMb>0?'down':''}" title="Minimum pressure vs the ${formatCycle(runTrend.prevCyc)} run">
+        🔽 MIN PRES ${runTrend.minPDeltaMb>0?'+':''}${runTrend.minPDeltaMb}mb
+      </span>` : ''}
+      <span class="trend-since">vs ${formatCycle(runTrend.prevCyc)} run</span>
+    </div>` : ''}
+
     ${ri ? (ri.count > 0 ? `
     <div class="ri-box warn">
       <div class="ri-head">⚠ RAPID INTENSIFICATION POTENTIAL</div>
@@ -2298,7 +2478,7 @@ function renderDetail(){
       <div class="agreement-bar"><div class="fill" style="width:${agreement.overall.score}%; background:${agreement.overall.color};"></div></div>
       <div class="agreement-sub">
         <span style="color:${agreement.overall.color}">OVERALL: ${agreement.overall.label}</span>
-        <span>±${agreement.overall.avgTrackSpreadKm} km track spread</span>
+        <span>±${agreement.overall.avgTrackSpreadMi} mi track spread</span>
         <span>±${windDisp(agreement.overall.avgWindSpreadKt, S.windUnit)} ${windSuffix(S.windUnit)} wind spread</span>
       </div>
     </div>
@@ -2335,14 +2515,19 @@ function renderDetail(){
     </div>
 
     <div class="sect-h">PROBABILITY DISTRIBUTION (${probs.total} ${isEns ? 'MEMBERS' : 'MODELS'})</div>
+    ${S.isolateThreshold ? `
+    <div class="isolate-banner">
+      <span>🔎 ISOLATING ${ISOLATE_THRESH_LABEL[S.isolateThreshold]} MEMBERS ON MAP &amp; CHARTS (n=${isolateCount})</span>
+      <button onclick="toggleIsolate('${S.isolateThreshold}')">✕ Clear</button>
+    </div>` : ''}
     <div class="models">
-      ${probRow(`TD (≥${windDisp(25,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pTD, '#5eead4')}
-      ${probRow(`TS (≥${windDisp(34,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pTS, '#3fb6ff')}
-      ${probRow(`CAT 1 (≥${windDisp(64,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC1, '#ffd93d')}
-      ${probRow(`CAT 2 (≥${windDisp(83,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC2, '#ff9f43')}
-      ${probRow(`CAT 3 (≥${windDisp(96,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC3, '#ff4757')}
-      ${probRow(`CAT 4 (≥${windDisp(113,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC4, '#c084fc')}
-      ${probRow(`CAT 5 (≥${windDisp(137,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC5, '#f472b6')}
+      ${probRow(`TD (≥${windDisp(25,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pTD, '#5eead4', 'TD')}
+      ${probRow(`TS (≥${windDisp(34,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pTS, '#3fb6ff', 'TS')}
+      ${probRow(`CAT 1 (≥${windDisp(64,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC1, '#ffd93d', 'C1')}
+      ${probRow(`CAT 2 (≥${windDisp(83,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC2, '#ff9f43', 'C2')}
+      ${probRow(`CAT 3 (≥${windDisp(96,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC3, '#ff4757', 'C3')}
+      ${probRow(`CAT 4 (≥${windDisp(113,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC4, '#c084fc', 'C4')}
+      ${probRow(`CAT 5 (≥${windDisp(137,S.windUnit)}${windSuffix(S.windUnit)})`, probs.pC5, '#f472b6', 'C5')}
     </div>
 
     <div style="margin-top:0px;">
@@ -2383,6 +2568,20 @@ function pickDefaultStorm(parsed){
   return best;
 }
 
+function syncToggleButtonsToState(){
+  document.querySelectorAll('[data-colorby]').forEach(b=>b.classList.toggle('on', b.dataset.colorby===S.colorBy));
+  document.querySelectorAll('[data-windunit]').forEach(b=>b.classList.toggle('on', b.dataset.windunit===S.windUnit));
+  document.getElementById('toggleEnsBtn').classList.toggle('on', S.showEnsembles);
+  document.getElementById('toggleTrackBtn').classList.toggle('on', S.showTrackModels);
+  document.getElementById('toggleIntBtn').classList.toggle('on', S.showIntensityModels);
+  document.getElementById('toggleHeatmapBtn').classList.toggle('on', S.showHeatmap);
+  document.getElementById('toggleGoogleBtn').classList.toggle('on', S.showGoogleEnsembles);
+  document.getElementById('toggleCitiesBtn').classList.toggle('on', S.showCities);
+  document.getElementById('toggleConeBtn').classList.toggle('on', S.showCone);
+  document.getElementById('toggleDensityBtn').classList.toggle('on', S.showDensity);
+  document.getElementById('playBtn').textContent = '▶';
+}
+
 function activateParsedData(parsed){
   S.parsed = parsed;
   S.activeStorm = pickDefaultStorm(parsed);
@@ -2397,18 +2596,10 @@ function activateParsedData(parsed){
   S.showGoogleEnsembles = !hasRalData(storm) && hasGoogleData(storm);
   S.showCone = false; S.showDensity = false; S.playTau = null; S.playing = false;
   S.closestPoint = null; S.closestRadiusMi = 60;
+  S.isolateThreshold = null;
   if(playTimer){ clearInterval(playTimer); playTimer = null; }
 
-  document.querySelectorAll('[data-colorby]').forEach(b=>b.classList.toggle('on', b.dataset.colorby==='model'));
-  document.querySelectorAll('[data-windunit]').forEach(b=>b.classList.toggle('on', b.dataset.windunit==='kt'));
-  document.getElementById('toggleEnsBtn').classList.toggle('on', S.showEnsembles);
-  document.getElementById('toggleTrackBtn').classList.remove('on');
-  document.getElementById('toggleIntBtn').classList.remove('on');
-  document.getElementById('toggleHeatmapBtn').classList.remove('on');
-  document.getElementById('toggleGoogleBtn').classList.toggle('on', S.showGoogleEnsembles);
-  document.getElementById('toggleConeBtn').classList.remove('on');
-  document.getElementById('toggleDensityBtn').classList.remove('on');
-  document.getElementById('playBtn').textContent = '▶';
+  syncToggleButtonsToState();
   document.getElementById('cycleLabel').textContent = parsed.stormKeys.length > 1
     ? `Loaded ${parsed.stormKeys.length} storms`
     : "Loaded Data Successfully";
@@ -2416,33 +2607,71 @@ function activateParsedData(parsed){
   document.getElementById('uploadScreen').style.display='none';
   document.getElementById('mainScreen').style.display='flex';
 
+  // a fresh upload supersedes anything encoded in the URL from a shared link
+  if(location.hash.startsWith('#share=')) history.replaceState(null, '', location.pathname);
+
   initLeaflet();
   backToStormView();
   renderMap();
   renderDetail();
 }
 
-let pendingRalFile = null, pendingGoogleFile = null;
+let pendingRalFile = null;
+let pendingGoogleFiles = []; // supports multiple runs at once
 
 function updateLoadButtonState(){
   const btn = document.getElementById('loadDataBtn');
-  btn.classList.toggle('ready', !!(pendingRalFile || pendingGoogleFile));
+  btn.classList.toggle('ready', !!(pendingRalFile || pendingGoogleFiles.length));
 }
 
-function setPendingFile(kind, file){
+function setPendingRalFile(file){
   clearUploadError();
-  if(kind === 'ral') pendingRalFile = file; else pendingGoogleFile = file;
-  const slot = document.getElementById(kind === 'ral' ? 'slotRal' : 'slotGoogle');
-  const fileLabel = document.getElementById(kind === 'ral' ? 'slotRalFile' : 'slotGoogleFile');
+  pendingRalFile = file;
+  const slot = document.getElementById('slotRal');
+  const fileLabel = document.getElementById('slotRalFile');
   slot.classList.toggle('has-file', !!file);
   fileLabel.textContent = file ? file.name : '';
   updateLoadButtonState();
 }
 
+function renderGoogleFileList(){
+  const slot = document.getElementById('slotGoogle');
+  const fileLabel = document.getElementById('slotGoogleFile');
+  slot.classList.toggle('has-file', pendingGoogleFiles.length > 0);
+  fileLabel.innerHTML = pendingGoogleFiles.map((f, i) => `
+    <div class="ss-file-row">
+      <span class="fname">${f.name}</span>
+      <span class="ss-file-remove" onclick="event.stopPropagation(); removeGoogleFile(${i})" title="Remove">✕</span>
+    </div>`).join('');
+}
+
+function addGoogleFiles(fileList){
+  clearUploadError();
+  Array.from(fileList).forEach(f => {
+    if(!pendingGoogleFiles.some(existing => existing.name === f.name && existing.size === f.size)){
+      pendingGoogleFiles.push(f);
+    }
+  });
+  renderGoogleFileList();
+  updateLoadButtonState();
+}
+
+function removeGoogleFile(idx){
+  pendingGoogleFiles.splice(idx, 1);
+  renderGoogleFileList();
+  updateLoadButtonState();
+}
+
 function clearPendingFile(kind){
-  setPendingFile(kind, null);
-  const input = document.getElementById(kind === 'ral' ? 'fileInputRal' : 'fileInputGoogle');
-  input.value = '';
+  if(kind === 'ral'){
+    setPendingRalFile(null);
+    document.getElementById('fileInputRal').value = '';
+  } else {
+    pendingGoogleFiles = [];
+    renderGoogleFileList();
+    updateLoadButtonState();
+    document.getElementById('fileInputGoogle').value = '';
+  }
 }
 
 async function readFileText(file){
@@ -2454,22 +2683,30 @@ async function readFileText(file){
 }
 
 async function loadCombinedData(){
-  if(!pendingRalFile && !pendingGoogleFile) return;
+  if(!pendingRalFile && !pendingGoogleFiles.length) return;
   clearUploadError();
   try{
     const ralParsed = pendingRalFile ? parseATCF(await readFileText(pendingRalFile)) : null;
-    const googleParsed = pendingGoogleFile ? parseGoogleATCF(await readFileText(pendingGoogleFile)) : null;
-
     if(pendingRalFile && (!ralParsed || !ralParsed.stormKeys.length)){
       showUploadError('No recognizable hurricane-model or ensemble rows found in the standard ATCF file. Is it a valid a-deck?');
       return;
     }
-    if(pendingGoogleFile && (!googleParsed || !googleParsed.stormKeys.length)){
-      showUploadError('No recognizable Google WeatherLab ensemble rows (e.g. F000-F0XX) found in that file.');
-      return;
+
+    let googleParsedCombined = null;
+    if(pendingGoogleFiles.length){
+      const googleParses = [];
+      for(const f of pendingGoogleFiles){
+        const parsed = parseGoogleATCF(await readFileText(f));
+        if(!parsed.stormKeys.length){
+          showUploadError(`No recognizable Google WeatherLab ensemble rows (e.g. F000-F0XX) found in "${f.name}".`);
+          return;
+        }
+        googleParses.push(parsed);
+      }
+      googleParsedCombined = mergeMultipleParses(googleParses);
     }
 
-    const merged = mergeParsedSources(ralParsed, googleParsed);
+    const merged = mergeParsedSources(ralParsed, googleParsedCombined);
     if(!merged.stormKeys.length){
       showUploadError('No usable data found in the provided file(s).');
       return;
@@ -2478,6 +2715,123 @@ async function loadCombinedData(){
   }catch(e){
     console.error(e);
     showUploadError('Could not read one of those files (' + e.message + '). Make sure it is a plain-text ATCF a-deck, or a .gz of one.');
+  }
+}
+
+/* ============================================================
+   SHAREABLE VIEW LINKS
+   Encodes the fully-parsed data (all loaded storms/cycles/sources) plus the
+   current view state (toggles, selected storm/cycle/tab, etc.) into a
+   gzip-compressed, base64 URL fragment. Anyone who opens the resulting link
+   sees the exact same data and view with no re-upload needed — everything
+   still runs client-side, the payload just rides in the URL instead of a
+   file. Transient state (play position, playing) is intentionally excluded.
+   ============================================================ */
+function buildShareState(){
+  return {
+    activeStorm: S.activeStorm, activeCycle: S.activeCycle,
+    colorBy: S.colorBy, detailTab: S.detailTab, windUnit: S.windUnit,
+    showEnsembles: S.showEnsembles, showTrackModels: S.showTrackModels,
+    showIntensityModels: S.showIntensityModels, showGoogleEnsembles: S.showGoogleEnsembles,
+    showHeatmap: S.showHeatmap, showCities: S.showCities,
+    showCone: S.showCone, showDensity: S.showDensity,
+    closestPoint: S.closestPoint, closestRadiusMi: S.closestRadiusMi,
+    isolateThreshold: S.isolateThreshold
+  };
+}
+
+function copyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+let shareToastTimer = null;
+function showShareToast(message, isError){
+  const toast = document.getElementById('shareToast');
+  if(!toast) return;
+  toast.textContent = message;
+  toast.classList.toggle('error', !!isError);
+  toast.classList.add('show');
+  clearTimeout(shareToastTimer);
+  shareToastTimer = setTimeout(() => toast.classList.remove('show'), 4000);
+}
+
+function generateShareLink(){
+  if(!S.parsed){
+    showShareToast('⚠ Load some data first before sharing a view.', true);
+    return;
+  }
+  try{
+    const payload = { parsed: S.parsed, view: buildShareState() };
+    const json = JSON.stringify(payload);
+    const binary = window.pako.deflate(json, {to:'string'});
+    const b64 = btoa(binary);
+    const encoded = encodeURIComponent(b64);
+    const url = location.origin + location.pathname + '#share=' + encoded;
+
+    history.replaceState(null, '', url);
+    copyToClipboard(url);
+
+    const sizeKB = Math.round(encoded.length / 1024);
+    showShareToast(sizeKB > 300
+      ? `🔗 Link copied! (~${sizeKB}KB — quite large, may not work in every app)`
+      : '🔗 Link copied to clipboard!');
+  }catch(e){
+    console.error('Failed to generate share link', e);
+    showShareToast('⚠ Could not generate a share link for this data.', true);
+  }
+}
+
+function restoreFromShareLink(){
+  if(!location.hash.startsWith('#share=')) return false;
+  try{
+    const encoded = location.hash.slice('#share='.length);
+    const b64 = decodeURIComponent(encoded);
+    const binary = atob(b64);
+    const json = window.pako.inflate(binary, {to:'string'});
+    const payload = JSON.parse(json);
+    if(!payload || !payload.parsed || !payload.parsed.stormKeys || !payload.parsed.stormKeys.length){
+      throw new Error('malformed share payload');
+    }
+
+    S.parsed = payload.parsed;
+    Object.assign(S, payload.view || {});
+    S.playTau = null; S.playing = false;
+    if(playTimer){ clearInterval(playTimer); playTimer = null; }
+    if(!S.parsed.storms[S.activeStorm]) S.activeStorm = pickDefaultStorm(S.parsed);
+    const storm = activeStormObj();
+    if(!storm.cycles.includes(S.activeCycle)) S.activeCycle = storm.cycles[0];
+    S.fix = currentFix(storm, S.activeCycle);
+    coneDensityCacheKey = null;
+
+    syncToggleButtonsToState();
+    document.getElementById('cycleLabel').textContent = S.parsed.stormKeys.length > 1
+      ? `Loaded ${S.parsed.stormKeys.length} storms`
+      : "Loaded Data Successfully";
+    document.getElementById('uploadScreen').style.display='none';
+    document.getElementById('mainScreen').style.display='flex';
+
+    initLeaflet();
+    backToStormView();
+    renderMap();
+    renderDetail();
+    showShareToast('🔗 Opened a shared view.');
+    return true;
+  }catch(e){
+    console.error('Failed to restore shared view', e);
+    return false;
   }
 }
 
@@ -2494,7 +2848,9 @@ document.addEventListener('keydown', (e) => {
 function resetToUpload(){
   stopPlayback();
   S.parsed = null; S.fix = null; S.activeStorm = null; S.activeCycle = null;
+  S.isolateThreshold = null;
   coneDensityCacheKey = null;
+  if(location.hash.startsWith('#share=')) history.replaceState(null, '', location.pathname);
   document.getElementById('mainScreen').style.display='none';
   document.getElementById('uploadScreen').style.display='flex';
   clearPendingFile('ral');
@@ -2507,10 +2863,12 @@ function resetToUpload(){
    WIRING
    ============================================================ */
 document.getElementById('fileInputRal').addEventListener('change', e=>{
-  if(e.target.files[0]) setPendingFile('ral', e.target.files[0]);
+  if(e.target.files[0]) setPendingRalFile(e.target.files[0]);
+  e.target.value = '';
 });
 document.getElementById('fileInputGoogle').addEventListener('change', e=>{
-  if(e.target.files[0]) setPendingFile('google', e.target.files[0]);
+  if(e.target.files.length) addGoogleFiles(e.target.files);
+  e.target.value = '';
 });
 
 function wireDropSlot(slotId, kind){
@@ -2518,8 +2876,12 @@ function wireDropSlot(slotId, kind){
   ['dragenter','dragover'].forEach(ev=>slot.addEventListener(ev, e=>{ e.preventDefault(); e.stopPropagation(); slot.classList.add('drag'); }));
   ['dragleave','drop'].forEach(ev=>slot.addEventListener(ev, e=>{ e.preventDefault(); e.stopPropagation(); slot.classList.remove('drag'); }));
   slot.addEventListener('drop', e=>{
-    const f = e.dataTransfer.files[0];
-    if(f) setPendingFile(kind, f);
+    if(kind === 'ral'){
+      const f = e.dataTransfer.files[0];
+      if(f) setPendingRalFile(f);
+    } else {
+      if(e.dataTransfer.files.length) addGoogleFiles(e.dataTransfer.files);
+    }
   });
 }
 wireDropSlot('slotRal', 'ral');
@@ -2653,6 +3015,10 @@ document.getElementById('playResetBtn').onclick = ()=>{
 };
 
 document.getElementById('reloadBtn').onclick = resetToUpload;
+
+// If the URL carries a shared view (e.g. someone sent a #share= link),
+// open straight into it instead of the upload screen.
+restoreFromShareLink();
 
 </script>
 </body>
