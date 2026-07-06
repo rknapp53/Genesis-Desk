@@ -29,7 +29,8 @@
   header{display:flex;align-items:baseline;gap:18px;padding:14px 22px;
     border-bottom:1px solid var(--line);background:
     linear-gradient(180deg,#0d131c,#0a0e14);flex-wrap:wrap;z-index:3000;}
-  .brand{font-family:var(--mono);font-weight:700;letter-spacing:2px;font-size:15px}
+  .brand{font-family:var(--mono);font-weight:700;letter-spacing:2px;font-size:15px;cursor:pointer;transition:.15s;}
+  .brand:hover{color:var(--atl);}
   .brand b{color:var(--atl)}
   .tagline{font-family:var(--mono);font-size:10.5px;color:var(--dim);
     letter-spacing:1px;text-transform:uppercase}
@@ -49,8 +50,32 @@
   .dropzone svg{width:36px;height:36px;color:var(--dim);margin-bottom:14px}
   .dropzone .dz-title{font-weight:700;font-size:15px;margin-bottom:6px}
   .dropzone .dz-sub{font-family:var(--mono);font-size:11px;color:var(--dim)}
-  #fileInput{display:none}
-  
+  #fileInputRal, #fileInputGoogle{display:none}
+
+  .source-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .source-slot{border:2px dashed var(--line);border-radius:12px;padding:28px 16px;
+    text-align:center;cursor:pointer;transition:.15s;background:var(--panel);position:relative;}
+  .source-slot:hover, .source-slot.drag{border-color:var(--atl);background:#0d1826}
+  .source-slot.has-file{border-style:solid;border-color:var(--low);background:rgba(94,234,212,.06);}
+  .source-slot svg{width:26px;height:26px;color:var(--dim);margin-bottom:10px}
+  .source-slot .ss-label{font-family:var(--mono);font-size:9.5px;letter-spacing:1px;color:var(--dim);
+    text-transform:uppercase;margin-bottom:8px;}
+  .source-slot .ss-title{font-weight:700;font-size:13px;margin-bottom:4px;}
+  .source-slot .ss-sub{font-family:var(--mono);font-size:10px;color:var(--dim);}
+  .source-slot .ss-file{font-family:var(--mono);font-size:11px;color:var(--low);margin-top:8px;
+    word-break:break-all;padding:0 6px;}
+  .source-slot .ss-clear{position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:9px;
+    color:var(--dimmer);background:none;border:1px solid var(--line);border-radius:4px;
+    padding:2px 6px;cursor:pointer;display:none;}
+  .source-slot.has-file .ss-clear{display:block;}
+  .source-slot input[type=file]{display:none}
+
+  #loadDataBtn{width:100%;margin-top:16px;padding:14px;border-radius:10px;border:none;
+    background:var(--atl);color:#06101c;font-family:var(--mono);font-weight:700;font-size:13px;
+    letter-spacing:.5px;cursor:pointer;transition:.15s;opacity:.35;pointer-events:none;}
+  #loadDataBtn.ready{opacity:1;pointer-events:auto;}
+  #loadDataBtn.ready:hover{background:#65c5ff;}
+
   .source-box{margin-top:28px;background:var(--panel);border:1px solid var(--line);
     border-radius:10px;padding:18px 20px;}
   .source-box h2{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
@@ -74,6 +99,7 @@
     border-radius:4px;cursor:pointer;transition:.15s;white-space:nowrap;}
   .tbtn:hover{color:var(--ink);border-color:var(--dimmer)}
   .tbtn.on{color:#06101c;background:var(--atl);border-color:var(--atl);font-weight:600}
+  .tbtn.src-disabled{opacity:.3;filter:grayscale(1);pointer-events:none;cursor:not-allowed;}
   .tbtn-group{display:flex;gap:6px;align-items:center;transition:.2s;}
   .tbtn-group.grp-disabled{opacity:.32;filter:grayscale(1);pointer-events:none;}
   .unit-toggle .tbtn{padding:4px 8px}
@@ -183,7 +209,7 @@
 <body>
 
 <header>
-  <div class="brand"><b>GENESIS</b>·DESK</div>
+  <div class="brand" onclick="resetToUpload()" title="Return to home"><b>GENESIS</b>·DESK</div>
   <div class="tagline">ATCF File Reader · Runs Entirely In Your Browser</div>
   <div class="clock">
     <b id="cycleLabel">—</b>
@@ -193,20 +219,37 @@
 <div id="uploadScreen">
   <div class="upload-card">
     <h1>Load an ATCF a-deck</h1>
-    <p class="lede">Drop an ATCF a-deck file from your computer to analyze ensemble spread and guidance models.</p>
+    <p class="lede">Drop one or both ATCF a-deck sources below — the standard NHC/RAL a-deck, a Google WeatherLab a-deck, or both — to analyze ensemble spread and guidance models.</p>
 
-    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div class="dz-title">Drop your a-deck here, or click to browse</div>
-      <div class="dz-sub">.dat · .dat.gz · .txt</div>
+    <div class="source-grid">
+      <div class="source-slot" id="slotRal" onclick="document.getElementById('fileInputRal').click()">
+        <button class="ss-clear" onclick="event.stopPropagation(); clearPendingFile('ral')">✕ clear</button>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="ss-label">Source 1</div>
+        <div class="ss-title">Standard ATCF (RAL / NHC)</div>
+        <div class="ss-sub">.dat · .dat.gz · .txt</div>
+        <div class="ss-file" id="slotRalFile"></div>
+      </div>
+      <div class="source-slot" id="slotGoogle" onclick="document.getElementById('fileInputGoogle').click()">
+        <button class="ss-clear" onclick="event.stopPropagation(); clearPendingFile('google')">✕ clear</button>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="ss-label">Source 2</div>
+        <div class="ss-title">Google WeatherLab ATCF</div>
+        <div class="ss-sub">.txt a-deck (FNV3, etc.)</div>
+        <div class="ss-file" id="slotGoogleFile"></div>
+      </div>
     </div>
-    <input type="file" id="fileInput" accept=".dat,.gz,.txt">
+    <input type="file" id="fileInputRal" accept=".dat,.gz,.txt">
+    <input type="file" id="fileInputGoogle" accept=".dat,.gz,.txt">
+
+    <button id="loadDataBtn" onclick="loadCombinedData()">Load Data</button>
     <div class="upload-error" id="uploadError"></div>
 
     <div class="source-box">
       <h2>Where to get one</h2>
       <ol>
         <li>Browse <a href="https://hurricanes.ral.ucar.edu/realtime/current/" target="_blank" rel="noopener">NCAR RAL's active storm index</a> — every basin, updated in real time.</li>
+        <li>Or grab a Google WeatherLab a-deck directly from <a href="https://deepmind.google.com/science/weatherlab" target="_blank" rel="noopener">deepmind.google.com/science/weatherlab</a> for AI ensemble forecasts (e.g. FNV3).</li>
       </ol>
     </div>
   </div>
@@ -221,6 +264,7 @@
           <button class="tbtn on" id="toggleEnsBtn">Ensembles</button>
           <button class="tbtn" id="toggleTrackBtn">Track Models</button>
           <button class="tbtn" id="toggleIntBtn">Intensity Models</button>
+          <button class="tbtn" id="toggleGoogleBtn" title="Google WeatherLab ensemble">Google Ensemble</button>
           <button class="tbtn" id="toggleHeatmapBtn">MSLP Heatmap</button>
 
           <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-left:16px">WIND UNITS</span>
@@ -278,9 +322,10 @@ const INTENSITY_MODEL_AIDS = new Set([
 ]);
 
 const ENSEMBLE_RE = /^[A-Z]{2}\d{2}$|AEMN|EMN|AC00/i;
+const GOOGLE_ENSEMBLE_RE = /^F\d{3}$/i;
 const ENS_FAMILY_COLOR = { 
   GEFS:'#3fb6ff', NAVGEM:'#ff5d6c', CEPS:'#a97bff', 
-  ECMWF:'#ffd93d', UKMET:'#5eead4', MEAN:'#ffffff', OTHER:'#94a3b8' 
+  ECMWF:'#ffd93d', UKMET:'#5eead4', MEAN:'#ffffff', GOOGLE:'#34c98e', OTHER:'#94a3b8' 
 };
 
 function ensembleFamily(tech){
@@ -291,6 +336,7 @@ function ensembleFamily(tech){
   if(tech.startsWith("CP")) return "CEPS";
   if(tech.startsWith("EE") || tech.startsWith("EP") || tech==="EMN") return "ECMWF";
   if(tech.startsWith("UE") || tech.startsWith("UP")) return "UKMET";
+  if(GOOGLE_ENSEMBLE_RE.test(tech)) return "GOOGLE";
   return "OTHER";
 }
 
@@ -303,13 +349,13 @@ function parseLatLon(raw){
   return v;
 }
 
-function parseATCF(rawText){
+function parseATCFCore(rawText, ensembleTest){
   const trackByCycle={}, intByCycle={}, ensByCycle={}, allCycles=new Set();
   let basin='', cy='', stormName='';
   
   rawText.split(/\r?\n/).forEach(raw=>{
     const line = raw.trim();
-    if(!line) return;
+    if(!line || line.startsWith('#')) return;
     try{
       const parts = line.split(',').map(s=>s.trim());
       if(parts.length < 10) return;
@@ -336,7 +382,7 @@ function parseATCF(rawText){
 
       const isTrack = TRACK_MODEL_AIDS.has(tech);
       const isIntense = INTENSITY_MODEL_AIDS.has(tech);
-      const isEns = ENSEMBLE_RE.test(tech);
+      const isEns = ensembleTest(tech);
       
       if(!isTrack && !isIntense && !isEns) return;
       
@@ -351,10 +397,17 @@ function parseATCF(rawText){
           model: isEns ? ensembleFamily(tech) : tech,
           member: tech,
           cycle,
-          pts:[]
+          pts:[],
+          _tauSeen: new Set()
         };
       }
-      bucket[cycle][tech].pts.push([lon,lat,wind,tau,pres]);
+      // a-deck files often repeat the same fix once per wind-radii threshold
+      // (34/50/64kt); only keep the first row per (track, tau) to avoid
+      // stacking duplicate points on top of each other.
+      const track = bucket[cycle][tech];
+      if(track._tauSeen.has(tau)) return;
+      track._tauSeen.add(tau);
+      track.pts.push([lon,lat,wind,tau,pres]);
     }catch(e){}
   });
 
@@ -390,7 +443,7 @@ function parseATCF(rawText){
     const cleaned = {};
     for (const cyc in bucket) {
       const validTracks = Object.values(bucket[cyc])
-        .map(t => { t.pts.sort((a,b)=>a[3]-b[3]); return t; })
+        .map(t => { t.pts.sort((a,b)=>a[3]-b[3]); delete t._tauSeen; return t; })
         .filter(t => t.pts.length >= 2); 
       if (validTracks.length > 0) {
         cleaned[cyc] = validTracks;
@@ -416,12 +469,60 @@ function parseATCF(rawText){
   };
 }
 
+function parseATCF(rawText){
+  return parseATCFCore(rawText, tech => ENSEMBLE_RE.test(tech));
+}
+
+function parseGoogleATCF(rawText){
+  return parseATCFCore(rawText, tech => GOOGLE_ENSEMBLE_RE.test(tech));
+}
+
+function emptyBucket(){ return { byCycle: {} }; }
+
+/* Combines an optional RAL/NHC-style a-deck parse and an optional Google
+   WeatherLab a-deck parse into one unified data set. Either source may be
+   absent; the app treats "google ensembles" as a distinct, independently
+   toggleable category alongside the RAL-derived ensembles/track/intensity
+   buckets, rather than merging member lists together. */
+function mergeParsedSources(ralParsed, googleParsed){
+  const basin = (ralParsed && ralParsed.basin) || (googleParsed && googleParsed.basin) || '';
+  const cy = (ralParsed && ralParsed.cy) || (googleParsed && googleParsed.cy) || '';
+  const stormName = (ralParsed && ralParsed.stormName && !ralParsed.stormName.startsWith('TC '))
+    ? ralParsed.stormName
+    : ((googleParsed && googleParsed.stormName && !googleParsed.stormName.startsWith('TC ')) ? googleParsed.stormName
+      : ((ralParsed && ralParsed.stormName) || (googleParsed && googleParsed.stormName) || `TC ${cy}${basin}`));
+
+  const cycles = [...new Set([
+    ...(ralParsed ? ralParsed.cycles : []),
+    ...(googleParsed ? googleParsed.cycles : [])
+  ])].sort().reverse();
+
+  return {
+    basin, cy, stormName, cycles,
+    trackModels: ralParsed ? ralParsed.trackModels : emptyBucket(),
+    intensityModels: ralParsed ? ralParsed.intensityModels : emptyBucket(),
+    ensembles: ralParsed ? ralParsed.ensembles : emptyBucket(),
+    googleEnsembles: googleParsed ? googleParsed.ensembles : emptyBucket()
+  };
+}
+
+function hasBucketData(bucket){
+  return !!(bucket && Object.keys(bucket.byCycle).length > 0);
+}
+function hasRalData(parsed){
+  return !!parsed && (hasBucketData(parsed.ensembles) || hasBucketData(parsed.trackModels) || hasBucketData(parsed.intensityModels));
+}
+function hasGoogleData(parsed){
+  return !!parsed && hasBucketData(parsed.googleEnsembles);
+}
+
 function currentFix(parsed, cyc){
   if(!cyc) return null;
   const tTracks = parsed.trackModels.byCycle[cyc] || [];
   const iTracks = parsed.intensityModels.byCycle[cyc] || [];
   const eTracks = parsed.ensembles.byCycle[cyc] || [];
-  const allTracks = [...tTracks, ...iTracks, ...eTracks];
+  const gTracks = (parsed.googleEnsembles && parsed.googleEnsembles.byCycle[cyc]) || [];
+  const allTracks = [...tTracks, ...iTracks, ...eTracks, ...gTracks];
   
   if(!allTracks.length) return null;
   let pts = allTracks.map(t=>t.pts.find(p=>p[3]===0)).filter(Boolean);
@@ -686,6 +787,7 @@ const S = {
   parsed: null, fix: null,
   activeCycle: null,
   showEnsembles: true, showTrackModels: false, showIntensityModels: false, showHeatmap: false,
+  showGoogleEnsembles: false,
   showCone: false, showDensity: false,
   playTau: null, playing: false,
   closestPoint: null, closestRadiusMi: 60,
@@ -784,6 +886,9 @@ function formatCycle(cyc){
    ============================================================ */
 let leafletMap;
 let mapLayerGroup;
+let coneDensityGroup;
+let coneDensityCacheKey = null;
+let coneDensityCacheTotal = 0;
 
 function initLeaflet() {
   if (leafletMap) return;
@@ -794,6 +899,7 @@ function initLeaflet() {
   }).addTo(leafletMap);
   
   mapLayerGroup = L.layerGroup().addTo(leafletMap);
+  coneDensityGroup = L.layerGroup().addTo(leafletMap);
 
   leafletMap.on('click', (e) => {
     S.closestPoint = { lat: e.latlng.lat, lon: e.latlng.lng };
@@ -801,6 +907,7 @@ function initLeaflet() {
     renderDetail();
   });
 }
+
 
 function renderIntensityKey(){
   const el = document.getElementById('intensityKey');
@@ -820,7 +927,7 @@ function renderDensityKey(total){
   if(!S.showDensity || !total){ el.style.display='none'; return; }
   el.style.display='';
   const bgGrad = 'linear-gradient(to right, ' + DENSITY_STOPS.map(s=>s[1]).join(', ') + ')';
-  const tabLabel = S.detailTab==='ensemble' ? 'ENSEMBLE' : 'INTENSITY MODEL';
+  const tabLabel = S.detailTab==='ensemble' ? 'ENSEMBLE' : S.detailTab==='google' ? 'GOOGLE WEATHERLAB' : 'INTENSITY MODEL';
   el.innerHTML = `
     <div style="margin-bottom:4px;font-weight:600">STRIKE PROBABILITY · ${tabLabel} (n=${total})</div>
     <div class="scale" style="background:${bgGrad}"></div>
@@ -911,6 +1018,19 @@ function updateColorByAvailability(){
   if(lbl) lbl.style.opacity = S.showHeatmap ? .32 : 1;
 }
 
+function updateSourceAvailability(){
+  const ral = hasRalData(S.parsed);
+  const google = hasGoogleData(S.parsed);
+  ['toggleEnsBtn','toggleTrackBtn','toggleIntBtn','toggleHeatmapBtn'].forEach(id=>{
+    const btn = document.getElementById(id);
+    if(!btn) return;
+    btn.classList.toggle('src-disabled', !ral);
+    btn.disabled = !ral;
+  });
+  const gBtn = document.getElementById('toggleGoogleBtn');
+  if(gBtn){ gBtn.classList.toggle('src-disabled', !google); gBtn.disabled = !google; }
+}
+
 function syncPlayControl(maxTau){
   const slider = document.getElementById('playSlider');
   const label = document.getElementById('playTimeLabel');
@@ -940,6 +1060,7 @@ function renderMap() {
   mapLayerGroup.clearLayers();
   renderIntensityKey();
   updateColorByAvailability();
+  updateSourceAvailability();
   
   if(!S.parsed || !S.activeCycle){ syncPlayControl(null); document.getElementById('densityKey').style.display='none'; return; }
 
@@ -947,12 +1068,14 @@ function renderMap() {
   let ensTracks = S.parsed.ensembles.byCycle[cyc] || [];
   let trackTracks = S.parsed.trackModels.byCycle[cyc] || [];
   let intTracks = S.parsed.intensityModels.byCycle[cyc] || [];
+  let googleTracks = (S.parsed.googleEnsembles && S.parsed.googleEnsembles.byCycle[cyc]) || [];
 
   // Sync the play scrubber to whichever groups are currently shown on the map
   const shownGroups = [];
   if(S.showEnsembles) shownGroups.push(...ensTracks);
   if(S.showTrackModels) shownGroups.push(...trackTracks);
   if(S.showIntensityModels) shownGroups.push(...intTracks);
+  if(S.showGoogleEnsembles) shownGroups.push(...googleTracks);
   const allTausShown = shownGroups.flatMap(t => t.pts.map(p => p[3]));
   const maxTauShown = allTausShown.length ? Math.max(...allTausShown) : null;
   syncPlayControl(maxTauShown);
@@ -961,10 +1084,15 @@ function renderMap() {
     ensTracks = truncateTracksToTau(ensTracks, S.playTau);
     trackTracks = truncateTracksToTau(trackTracks, S.playTau);
     intTracks = truncateTracksToTau(intTracks, S.playTau);
+    googleTracks = truncateTracksToTau(googleTracks, S.playTau);
   }
 
-  if(S.showHeatmap && ensTracks.length > 0) {
-    ensTracks.forEach(tr => {
+  if(S.showHeatmap) {
+    const heatmapSource = [
+      ...(S.showEnsembles ? ensTracks : []),
+      ...(S.showGoogleEnsembles ? googleTracks : [])
+    ];
+    heatmapSource.forEach(tr => {
       if (tr.member === 'ENS MEAN') return;
       tr.pts.forEach(p => {
         if(p[4] && p[4] < 1013) {
@@ -977,30 +1105,42 @@ function renderMap() {
     });
   }
 
-  // Cone + density are scoped to whichever detail tab is active (Ensembles vs Intensity Models)
-  const tabTracks = S.detailTab === 'ensemble'
-    ? (S.parsed.ensembles.byCycle[cyc] || [])
-    : (S.parsed.intensityModels.byCycle[cyc] || []);
-  const tabColor = S.detailTab === 'ensemble' ? '#3fb6ff' : '#ff9f43';
+  // Cone + density are scoped to whichever detail tab is active (Ensembles / Intensity Models / Google).
+  // Neither depends on playTau, so cache by (cycle, tab, toggle state) and skip the
+  // expensive recompute + layer rebuild on every play-scrub frame.
+  const coneDensityKey = [cyc, S.detailTab, S.showCone, S.showDensity].join('|');
+  if(coneDensityKey !== coneDensityCacheKey){
+    coneDensityCacheKey = coneDensityKey;
+    coneDensityGroup.clearLayers();
 
-  if(S.showCone){
-    const steps = computeConeSteps(tabTracks, 6);
-    steps.forEach(s => {
-      L.circle([s.lat, s.lon], {
-        radius: Math.max(s.radiusKm, 15) * 1000,
-        stroke: false, fillColor: tabColor, fillOpacity: 0.05
-      }).addTo(mapLayerGroup);
-    });
+    const tabTracks = S.detailTab === 'ensemble' ? (S.parsed.ensembles.byCycle[cyc] || [])
+      : S.detailTab === 'google' ? ((S.parsed.googleEnsembles && S.parsed.googleEnsembles.byCycle[cyc]) || [])
+      : (S.parsed.intensityModels.byCycle[cyc] || []);
+    const tabColor = S.detailTab === 'ensemble' ? '#3fb6ff' : S.detailTab === 'google' ? '#34c98e' : '#ff9f43';
+
+    if(S.showCone){
+      const steps = computeConeSteps(tabTracks, 6);
+      steps.forEach(s => {
+        L.circle([s.lat, s.lon], {
+          radius: Math.max(s.radiusKm, 15) * 1000,
+          stroke: false, fillColor: tabColor, fillOpacity: 0.05
+        }).addTo(coneDensityGroup);
+      });
+    }
+
+    coneDensityCacheTotal = 0;
+    if(S.showDensity){
+      const { cells, total } = computeDensityGrid(tabTracks, 1);
+      coneDensityCacheTotal = total;
+      cells.forEach(c => {
+        L.rectangle([[c.lat0, c.lon0],[c.lat1, c.lon1]], {
+          stroke: false, fillColor: interpColor(c.prob, DENSITY_STOPS), fillOpacity: 0.12 + c.prob*0.45
+        }).addTo(coneDensityGroup);
+      });
+    }
   }
-
   if(S.showDensity){
-    const { cells, total } = computeDensityGrid(tabTracks, 1);
-    cells.forEach(c => {
-      L.rectangle([[c.lat0, c.lon0],[c.lat1, c.lon1]], {
-        stroke: false, fillColor: interpColor(c.prob, DENSITY_STOPS), fillOpacity: 0.12 + c.prob*0.45
-      }).addTo(mapLayerGroup);
-    });
-    renderDensityKey(total);
+    renderDensityKey(coneDensityCacheTotal);
   } else {
     document.getElementById('densityKey').style.display='none';
   }
@@ -1008,11 +1148,13 @@ function renderMap() {
   if(S.showEnsembles) renderMapTracks(ensTracks, null);
   if(S.showTrackModels) renderMapTracks(trackTracks, '#3fb6ff');
   if(S.showIntensityModels) renderMapTracks(intTracks, '#ff9f43');
+  if(S.showGoogleEnsembles) renderMapTracks(googleTracks, '#34c98e');
 
   if(S.playTau != null){
     if(S.showEnsembles) renderPlayMarkers(ensTracks, null);
     if(S.showTrackModels) renderPlayMarkers(trackTracks, '#3fb6ff');
     if(S.showIntensityModels) renderPlayMarkers(intTracks, '#ff9f43');
+    if(S.showGoogleEnsembles) renderPlayMarkers(googleTracks, '#34c98e');
   }
 
   if(S.closestPoint){
@@ -1475,8 +1617,18 @@ function renderDetail(){
   const p = S.parsed, fix = S.fix;
   const cyc = S.activeCycle;
 
+  const ralAvailable = hasRalData(p);
+  const googleAvailable = hasGoogleData(p);
+  // if the current tab's source disappeared (e.g. reload without that file), fall back sensibly
+  if(S.detailTab === 'ensemble' && !hasBucketData(p.ensembles) && ralAvailable) S.detailTab = hasBucketData(p.intensityModels) ? 'intensity' : 'ensemble';
+  if(S.detailTab !== 'google' && !ralAvailable && googleAvailable) S.detailTab = 'google';
+  if(S.detailTab === 'google' && !googleAvailable && ralAvailable) S.detailTab = 'ensemble';
+
   const isEns = S.detailTab === 'ensemble';
-  const activeTracks = isEns ? (p.ensembles.byCycle[cyc] || []) : (p.intensityModels.byCycle[cyc] || []);
+  const isGoogle = S.detailTab === 'google';
+  const activeTracks = isGoogle ? ((p.googleEnsembles && p.googleEnsembles.byCycle[cyc]) || [])
+    : isEns ? (p.ensembles.byCycle[cyc] || [])
+    : (p.intensityModels.byCycle[cyc] || []);
   
   const metrics = computeMetrics(activeTracks);
   const probs = computeProbabilities(activeTracks);
@@ -1484,8 +1636,8 @@ function renderDetail(){
   const ri = computeRIFlag(activeTracks);
   const closest = S.closestPoint ? computeClosestApproach(activeTracks, S.closestPoint, S.closestRadiusMi) : null;
   
-  const srcLabel = isEns ? 'ENSEMBLE' : 'INTENSITY';
-  const chartTitlePrefix = isEns ? 'ENSEMBLE MEMBERS' : 'INTENSITY GUIDANCE';
+  const srcLabel = isGoogle ? 'GOOGLE' : isEns ? 'ENSEMBLE' : 'INTENSITY';
+  const chartTitlePrefix = isGoogle ? 'GOOGLE WEATHERLAB ENSEMBLE' : isEns ? 'ENSEMBLE MEMBERS' : 'INTENSITY GUIDANCE';
 
   const windChart = buildChart(activeTracks, 'wind', `${chartTitlePrefix} · INTENSITY / WIND`, `NO ${srcLabel} DATA AVAILABLE FOR THIS CYCLE`, cyc);
   const presChart = buildChart(activeTracks, 'pressure', `${chartTitlePrefix} · MINIMUM SEA LEVEL PRESSURE`, `NO ${srcLabel} DATA AVAILABLE FOR THIS CYCLE`, cyc);
@@ -1506,9 +1658,10 @@ function renderDetail(){
       </select>
     </div>
 
-    <div style="display:flex; gap:6px; padding:16px 20px 0;">
-      <button class="tbtn ${isEns?'on':''}" onclick="setDetailTab('ensemble')">Ensembles</button>
-      <button class="tbtn ${!isEns?'on':''}" onclick="setDetailTab('intensity')">Intensity Models</button>
+    <div style="display:flex; gap:6px; padding:16px 20px 0; flex-wrap:wrap;">
+      <button class="tbtn ${isEns?'on':''} ${!ralAvailable?'src-disabled':''}" ${!ralAvailable?'disabled':''} onclick="setDetailTab('ensemble')">Ensembles</button>
+      <button class="tbtn ${(!isEns && !isGoogle)?'on':''} ${!ralAvailable?'src-disabled':''}" ${!ralAvailable?'disabled':''} onclick="setDetailTab('intensity')">Intensity Models</button>
+      <button class="tbtn ${isGoogle?'on':''} ${!googleAvailable?'src-disabled':''}" ${!googleAvailable?'disabled':''} onclick="setDetailTab('google')">Google</button>
     </div>
 
     <div class="metrics" style="margin-top: 16px;">
@@ -1603,29 +1756,27 @@ function clearUploadError(){
   document.getElementById('uploadError').style.display='none';
 }
 
-function processLoadedText(text) {
-  const parsed = parseATCF(text);
-  if(!parsed.cycles.length){
-    showUploadError('No recognizable hurricane-model or ensemble rows found in this file. Is it a valid ATCF a-deck?');
-    return;
-  }
+function activateParsedData(parsed){
   S.parsed = parsed;
   S.activeCycle = parsed.cycles[0];
   S.fix = currentFix(parsed, S.activeCycle);
-  S.detailTab = 'ensemble'; 
-  
+  S.detailTab = hasRalData(parsed) ? 'ensemble' : 'google';
+  coneDensityCacheKey = null;
+
   S.colorBy='model'; S.windUnit='kt';
-  S.showEnsembles = true; S.showTrackModels = false; S.showIntensityModels = false; S.showHeatmap = false;
+  S.showEnsembles = hasRalData(parsed); S.showTrackModels = false; S.showIntensityModels = false; S.showHeatmap = false;
+  S.showGoogleEnsembles = !hasRalData(parsed) && hasGoogleData(parsed);
   S.showCone = false; S.showDensity = false; S.playTau = null; S.playing = false;
   S.closestPoint = null; S.closestRadiusMi = 60;
   if(playTimer){ clearInterval(playTimer); playTimer = null; }
-  
+
   document.querySelectorAll('[data-colorby]').forEach(b=>b.classList.toggle('on', b.dataset.colorby==='model'));
   document.querySelectorAll('[data-windunit]').forEach(b=>b.classList.toggle('on', b.dataset.windunit==='kt'));
-  document.getElementById('toggleEnsBtn').classList.add('on');
+  document.getElementById('toggleEnsBtn').classList.toggle('on', S.showEnsembles);
   document.getElementById('toggleTrackBtn').classList.remove('on');
   document.getElementById('toggleIntBtn').classList.remove('on');
   document.getElementById('toggleHeatmapBtn').classList.remove('on');
+  document.getElementById('toggleGoogleBtn').classList.toggle('on', S.showGoogleEnsembles);
   document.getElementById('toggleConeBtn').classList.remove('on');
   document.getElementById('toggleDensityBtn').classList.remove('on');
   document.getElementById('playBtn').textContent = '▶';
@@ -1640,29 +1791,73 @@ function processLoadedText(text) {
   renderDetail();
 }
 
-async function handleFile(file){
+let pendingRalFile = null, pendingGoogleFile = null;
+
+function updateLoadButtonState(){
+  const btn = document.getElementById('loadDataBtn');
+  btn.classList.toggle('ready', !!(pendingRalFile || pendingGoogleFile));
+}
+
+function setPendingFile(kind, file){
+  clearUploadError();
+  if(kind === 'ral') pendingRalFile = file; else pendingGoogleFile = file;
+  const slot = document.getElementById(kind === 'ral' ? 'slotRal' : 'slotGoogle');
+  const fileLabel = document.getElementById(kind === 'ral' ? 'slotRalFile' : 'slotGoogleFile');
+  slot.classList.toggle('has-file', !!file);
+  fileLabel.textContent = file ? file.name : '';
+  updateLoadButtonState();
+}
+
+function clearPendingFile(kind){
+  setPendingFile(kind, null);
+  const input = document.getElementById(kind === 'ral' ? 'fileInputRal' : 'fileInputGoogle');
+  input.value = '';
+}
+
+async function readFileText(file){
+  if(file.name.toLowerCase().endsWith('.gz')){
+    const buf = new Uint8Array(await file.arrayBuffer());
+    return window.pako.inflate(buf, {to:'string'});
+  }
+  return await file.text();
+}
+
+async function loadCombinedData(){
+  if(!pendingRalFile && !pendingGoogleFile) return;
   clearUploadError();
   try{
-    let text;
-    if(file.name.toLowerCase().endsWith('.gz')){
-      const buf = new Uint8Array(await file.arrayBuffer());
-      text = window.pako.inflate(buf, {to:'string'});
-    } else {
-      text = await file.text();
+    const ralParsed = pendingRalFile ? parseATCF(await readFileText(pendingRalFile)) : null;
+    const googleParsed = pendingGoogleFile ? parseGoogleATCF(await readFileText(pendingGoogleFile)) : null;
+
+    if(pendingRalFile && (!ralParsed || !ralParsed.cycles.length)){
+      showUploadError('No recognizable hurricane-model or ensemble rows found in the standard ATCF file. Is it a valid a-deck?');
+      return;
     }
-    processLoadedText(text);
+    if(pendingGoogleFile && (!googleParsed || !googleParsed.cycles.length)){
+      showUploadError('No recognizable Google WeatherLab ensemble rows (e.g. F000-F0XX) found in that file.');
+      return;
+    }
+
+    const merged = mergeParsedSources(ralParsed, googleParsed);
+    if(!merged.cycles.length){
+      showUploadError('No usable data found in the provided file(s).');
+      return;
+    }
+    activateParsedData(merged);
   }catch(e){
     console.error(e);
-    showUploadError('Could not read that file (' + e.message + '). Make sure it is a plain-text ATCF a-deck, or a .gz of one.');
+    showUploadError('Could not read one of those files (' + e.message + '). Make sure it is a plain-text ATCF a-deck, or a .gz of one.');
   }
 }
 
 function resetToUpload(){
   stopPlayback();
   S.parsed = null; S.fix = null; S.activeCycle = null;
+  coneDensityCacheKey = null;
   document.getElementById('mainScreen').style.display='none';
   document.getElementById('uploadScreen').style.display='flex';
-  document.getElementById('fileInput').value = '';
+  clearPendingFile('ral');
+  clearPendingFile('google');
   document.getElementById('cycleLabel').textContent = '—';
   clearUploadError();
 }
@@ -1670,16 +1865,24 @@ function resetToUpload(){
 /* ============================================================
    WIRING
    ============================================================ */
-document.getElementById('fileInput').addEventListener('change', e=>{
-  if(e.target.files[0]) handleFile(e.target.files[0]);
+document.getElementById('fileInputRal').addEventListener('change', e=>{
+  if(e.target.files[0]) setPendingFile('ral', e.target.files[0]);
 });
-const dz = document.getElementById('dropzone');
-['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('drag'); }));
-['dragleave','drop'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove('drag'); }));
-dz.addEventListener('drop', e=>{
-  const f = e.dataTransfer.files[0];
-  if(f) handleFile(f);
+document.getElementById('fileInputGoogle').addEventListener('change', e=>{
+  if(e.target.files[0]) setPendingFile('google', e.target.files[0]);
 });
+
+function wireDropSlot(slotId, kind){
+  const slot = document.getElementById(slotId);
+  ['dragenter','dragover'].forEach(ev=>slot.addEventListener(ev, e=>{ e.preventDefault(); e.stopPropagation(); slot.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev=>slot.addEventListener(ev, e=>{ e.preventDefault(); e.stopPropagation(); slot.classList.remove('drag'); }));
+  slot.addEventListener('drop', e=>{
+    const f = e.dataTransfer.files[0];
+    if(f) setPendingFile(kind, f);
+  });
+}
+wireDropSlot('slotRal', 'ral');
+wireDropSlot('slotGoogle', 'google');
 
 document.querySelectorAll('[data-colorby]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('[data-colorby]').forEach(x=>x.classList.remove('on'));
@@ -1705,6 +1908,11 @@ document.getElementById('toggleTrackBtn').onclick = ()=>{
 document.getElementById('toggleIntBtn').onclick = ()=>{
   S.showIntensityModels = !S.showIntensityModels;
   document.getElementById('toggleIntBtn').classList.toggle('on', S.showIntensityModels);
+  renderMap();
+};
+document.getElementById('toggleGoogleBtn').onclick = ()=>{
+  S.showGoogleEnsembles = !S.showGoogleEnsembles;
+  document.getElementById('toggleGoogleBtn').classList.toggle('on', S.showGoogleEnsembles);
   renderMap();
 };
 document.getElementById('toggleHeatmapBtn').onclick = ()=>{
@@ -1746,6 +1954,26 @@ function stepPlayback(){
   renderMap(); renderDetail();
 }
 
+// While actively dragging the scrubber, only the map (spaghetti truncation +
+// current-position markers) updates, throttled to one paint per animation
+// frame; the detail panel's charts/metrics/agreement etc. only rebuild once
+// on release. Rebuilding the whole chart panel on every pixel of drag was
+// the source of the lag.
+let mapRafPending = false;
+function scheduleMapRender(){
+  if(mapRafPending) return;
+  mapRafPending = true;
+  requestAnimationFrame(() => {
+    mapRafPending = false;
+    renderMap();
+  });
+}
+function updatePlayLabel(){
+  const label = document.getElementById('playTimeLabel');
+  if(!label) return;
+  label.textContent = S.playTau == null ? 'FULL FORECAST' : formatAxisTime(S.activeCycle, S.playTau) + ` (+${S.playTau}h)`;
+}
+
 document.getElementById('playBtn').onclick = ()=>{
   const slider = document.getElementById('playSlider');
   if(slider.disabled) return;
@@ -1763,7 +1991,13 @@ document.getElementById('playBtn').onclick = ()=>{
 document.getElementById('playSlider').oninput = (e)=>{
   stopPlayback();
   S.playTau = Number(e.target.value);
-  renderMap(); renderDetail();
+  updatePlayLabel();
+  scheduleMapRender();
+};
+document.getElementById('playSlider').onchange = (e)=>{
+  S.playTau = Number(e.target.value);
+  renderMap();
+  renderDetail();
 };
 
 document.getElementById('playResetBtn').onclick = ()=>{
@@ -1777,4 +2011,5 @@ document.getElementById('reloadBtn').onclick = resetToUpload;
 </script>
 </body>
 </html>
+
 
